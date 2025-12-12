@@ -3,7 +3,6 @@ import AudioTranscriptionPlugin from './main';
 
 export type ModelSize = 'tiny' | 'base' | 'small' | 'medium' | 'large';
 export type ProcessingMode = 'local' | 'cloud-whisper' | 'cloud-openrouter';
-export type AnalysisProvider = 'local-ollama' | 'cloud-openrouter';
 export type Language = 'auto' | 'en' | 'el' | 'multilingual';
 
 export interface AudioTranscriptionSettings {
@@ -13,8 +12,7 @@ export interface AudioTranscriptionSettings {
 	language: Language;
 	enableDiarization: boolean;
 
-	// Analysis settings
-	analysisProvider: AnalysisProvider;
+	// Analysis settings (cloud-only via OpenRouter)
 	customInstructions: string;
 
 	// API Keys
@@ -34,7 +32,6 @@ export const DEFAULT_SETTINGS: AudioTranscriptionSettings = {
 	modelSize: 'medium',
 	language: 'auto',
 	enableDiarization: false,
-	analysisProvider: 'local-ollama',
 	customInstructions: '',
 	openaiApiKey: '',
 	openrouterApiKey: '',
@@ -125,17 +122,10 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// ========================================
 		containerEl.createEl('h3', { text: 'Analysis Settings' });
 
-		new Setting(containerEl)
-			.setName('Analysis provider')
-			.setDesc('Choose how to analyze and extract insights from transcriptions')
-			.addDropdown(dropdown => dropdown
-				.addOption('local-ollama', 'Local (Ollama) - Requires Ollama installed')
-				.addOption('cloud-openrouter', 'Cloud (OpenRouter) - Requires API key')
-				.setValue(this.plugin.settings.analysisProvider)
-				.onChange(async (value: AnalysisProvider) => {
-					this.plugin.settings.analysisProvider = value;
-					await this.plugin.saveSettings();
-				}));
+		containerEl.createEl('p', {
+			text: 'Analysis uses OpenRouter to extract summaries, key points, and action items from transcriptions.',
+			cls: 'setting-item-description'
+		});
 
 		new Setting(containerEl)
 			.setName('Custom analysis instructions')
@@ -172,33 +162,31 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 				});
 		}
 
-		if (this.plugin.settings.processingMode === 'cloud-openrouter' ||
-		    this.plugin.settings.analysisProvider === 'cloud-openrouter') {
-			new Setting(containerEl)
-				.setName('OpenRouter API key')
-				.setDesc('Your OpenRouter API key for transcription and/or analysis')
-				.addText(text => text
-					.setPlaceholder('sk-or-...')
-					.setValue(this.plugin.settings.openrouterApiKey)
-					.onChange(async (value) => {
-						this.plugin.settings.openrouterApiKey = value;
-						await this.plugin.saveSettings();
-					}))
-				.then(setting => {
-					setting.controlEl.querySelector('input')?.setAttribute('type', 'password');
-				});
+		// OpenRouter is always needed for analysis
+		new Setting(containerEl)
+			.setName('OpenRouter API key')
+			.setDesc('Required for AI-powered transcript analysis')
+			.addText(text => text
+				.setPlaceholder('sk-or-...')
+				.setValue(this.plugin.settings.openrouterApiKey)
+				.onChange(async (value) => {
+					this.plugin.settings.openrouterApiKey = value;
+					await this.plugin.saveSettings();
+				}))
+			.then(setting => {
+				setting.controlEl.querySelector('input')?.setAttribute('type', 'password');
+			});
 
-			new Setting(containerEl)
-				.setName('OpenRouter model name')
-				.setDesc('The model to use for processing (e.g., meta-llama/llama-3.2-3b-instruct)')
-				.addText(text => text
-					.setPlaceholder('meta-llama/llama-3.2-3b-instruct')
-					.setValue(this.plugin.settings.openrouterModelName)
-					.onChange(async (value) => {
-						this.plugin.settings.openrouterModelName = value;
-						await this.plugin.saveSettings();
-					}));
-		}
+		new Setting(containerEl)
+			.setName('OpenRouter model name')
+			.setDesc('The model to use for analysis (e.g., meta-llama/llama-3.2-3b-instruct)')
+			.addText(text => text
+				.setPlaceholder('meta-llama/llama-3.2-3b-instruct')
+				.setValue(this.plugin.settings.openrouterModelName)
+				.onChange(async (value) => {
+					this.plugin.settings.openrouterModelName = value;
+					await this.plugin.saveSettings();
+				}));
 
 		// ========================================
 		// MODEL MANAGEMENT

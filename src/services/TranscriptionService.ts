@@ -131,20 +131,10 @@ export class TranscriptionService {
 	}
 
 	private async analyzeTranscription(result: TranscriptionResult): Promise<any> {
-		const { analysisProvider, customInstructions } = this.plugin.settings;
+		const { customInstructions } = this.plugin.settings;
 
-		if (analysisProvider === 'cloud-openrouter') {
-			// Use OpenRouter for analysis
-			return await this.openRouterProcessor.analyzeText(result.text, customInstructions);
-		} else {
-			// Use local Ollama (TODO: implement)
-			return {
-				summary: 'Analysis not yet implemented for local Ollama',
-				keyPoints: ['Please configure OpenRouter for AI analysis'],
-				actionItems: [],
-				followUps: []
-			};
-		}
+		// Use OpenRouter for analysis (cloud-only)
+		return await this.openRouterProcessor.analyzeText(result.text, customInstructions);
 	}
 
 	private async createMarkdownFile(
