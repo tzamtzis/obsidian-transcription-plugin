@@ -27,7 +27,7 @@ export interface SpeakerInfo {
 export class TranscriptionService {
 	private plugin: AudioTranscriptionPlugin;
 	private currentProgress: number = 0;
-	private localProcessor: LocalWhisperProcessor;
+	public localProcessor: LocalWhisperProcessor;
 	private cloudWhisperProcessor: CloudWhisperProcessor;
 	private openRouterProcessor: OpenRouterProcessor;
 

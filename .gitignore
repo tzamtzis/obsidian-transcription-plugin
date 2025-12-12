@@ -33,6 +33,7 @@ bin/
 *.tmp
 *.temp
 *.temp.wav
+*-temp.zip
 .cache/
 
 # OS generated files

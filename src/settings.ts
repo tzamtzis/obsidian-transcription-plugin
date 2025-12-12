@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import AudioTranscriptionPlugin from './main';
 
 export type ModelSize = 'tiny' | 'base' | 'small' | 'medium' | 'large';
@@ -231,6 +231,31 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 							button.setButtonText('Download Model');
 						}
 					}));
+
+			new Setting(containerEl)
+				.setName('Download Whisper.cpp binary')
+				.setDesc('Download the whisper.cpp executable for Windows (required for local processing)')
+				.addButton(button => button
+					.setButtonText('Download Binary')
+					.onClick(async () => {
+						button.setDisabled(true);
+						button.setButtonText('Downloading...');
+						try {
+							await this.plugin.transcriptionService.localProcessor.downloadBinary((progress) => {
+								button.setButtonText(`Downloading... ${progress}%`);
+							});
+							button.setButtonText('Download Complete!');
+							setTimeout(() => {
+								this.display(); // Refresh to update status
+							}, 2000);
+						} catch (error) {
+							console.error('Failed to download binary:', error);
+							new Notice(`Failed to download binary: ${error.message}`);
+							button.setButtonText('Download Binary');
+						} finally {
+							button.setDisabled(false);
+						}
+					}));
 		}
 
 		// ========================================
@@ -300,7 +325,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 			const exists = await this.plugin.modelManager.checkModelExists(model);
 			const selected = model === this.plugin.settings.modelSize;
 
-			const prefix = selected ? 'Ï ' : 'Ë ';
+			const prefix = selected ? 'ï¿½ ' : 'ï¿½ ';
 			const status = exists ? ` Installed (${modelSizes[model]})` : 'Not downloaded';
 			item.textContent = `${prefix}${model}.bin - ${status}`;
 

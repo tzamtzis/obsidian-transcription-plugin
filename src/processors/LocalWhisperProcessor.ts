@@ -4,6 +4,9 @@ import { TranscriptionResult, TranscriptSegment } from '../services/Transcriptio
 import * as path from 'path';
 import * as fs from 'fs';
 import { spawn, ChildProcess } from 'child_process';
+import * as https from 'https';
+import { IncomingMessage } from 'http';
+import AdmZip from 'adm-zip';
 
 export interface WhisperOptions {
 	modelPath: string;
@@ -361,10 +364,150 @@ export class LocalWhisperProcessor {
 	async downloadBinary(onProgress?: (progress: number) => void): Promise<void> {
 		// URL for whisper.cpp Windows binary
 		const binaryUrl = 'https://github.com/ggerganov/whisper.cpp/releases/download/v1.5.4/whisper-bin-x64.zip';
+		const binDir = path.dirname(this.whisperBinaryPath);
+		const tempZipPath = path.join(binDir, 'whisper-temp.zip');
 
-		// TODO: Implement binary download
-		// This would download the zip, extract whisper.exe, and place it in the bin directory
+		try {
+			// Ensure bin directory exists
+			if (!fs.existsSync(binDir)) {
+				fs.mkdirSync(binDir, { recursive: true });
+			}
 
-		throw new Error('Binary download not yet implemented. Please download whisper.cpp manually.');
+			// Download the zip file
+			if (onProgress) onProgress(10);
+			await this.downloadFile(binaryUrl, tempZipPath, (downloaded, total) => {
+				if (onProgress && total > 0) {
+					const downloadProgress = Math.floor((downloaded / total) * 70); // 10-80%
+					onProgress(10 + downloadProgress);
+				}
+			});
+
+			// Extract whisper.exe from the zip
+			if (onProgress) onProgress(80);
+			await this.extractWhisperBinary(tempZipPath, binDir);
+
+			// Clean up temp zip file
+			if (fs.existsSync(tempZipPath)) {
+				fs.unlinkSync(tempZipPath);
+			}
+
+			if (onProgress) onProgress(100);
+
+		} catch (error) {
+			// Clean up on error
+			if (fs.existsSync(tempZipPath)) {
+				fs.unlinkSync(tempZipPath);
+			}
+			throw error;
+		}
+	}
+
+	private async downloadFile(
+		url: string,
+		destPath: string,
+		onProgress?: (downloaded: number, total: number) => void
+	): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const download = (currentUrl: string, redirectCount: number) => {
+				if (redirectCount > 5) {
+					reject(new Error('Too many redirects'));
+					return;
+				}
+
+				const request = https.get(currentUrl, (response: IncomingMessage) => {
+					// Handle redirects
+					if (response.statusCode === 301 || response.statusCode === 302 || response.statusCode === 303 || response.statusCode === 307 || response.statusCode === 308) {
+						const redirectUrl = response.headers.location;
+						if (!redirectUrl) {
+							reject(new Error('Redirect without location header'));
+							return;
+						}
+						download(redirectUrl, redirectCount + 1);
+						return;
+					}
+
+					if (response.statusCode !== 200) {
+						reject(new Error(`Download failed with status ${response.statusCode}`));
+						return;
+					}
+
+					const totalSize = parseInt(response.headers['content-length'] || '0', 10);
+					let downloadedSize = 0;
+
+					const fileStream = fs.createWriteStream(destPath);
+
+					response.on('data', (chunk: Buffer) => {
+						downloadedSize += chunk.length;
+						if (onProgress) {
+							onProgress(downloadedSize, totalSize);
+						}
+					});
+
+					response.pipe(fileStream);
+
+					fileStream.on('finish', () => {
+						fileStream.close();
+						resolve();
+					});
+
+					fileStream.on('error', (error) => {
+						fs.unlinkSync(destPath);
+						reject(error);
+					});
+				});
+
+				request.on('error', (error) => {
+					reject(error);
+				});
+
+				request.setTimeout(30000, () => {
+					request.destroy();
+					reject(new Error('Download timeout'));
+				});
+			};
+
+			download(url, 0);
+		});
+	}
+
+	private async extractWhisperBinary(zipPath: string, destDir: string): Promise<void> {
+		return new Promise((resolve, reject) => {
+			try {
+				const zip = new AdmZip(zipPath);
+				const zipEntries = zip.getEntries();
+
+				// Find whisper.exe or main.exe in the zip
+				let whisperEntry = zipEntries.find(entry =>
+					entry.entryName.endsWith('whisper.exe') ||
+					entry.entryName.endsWith('main.exe')
+				);
+
+				if (!whisperEntry) {
+					// Try to find any .exe file
+					whisperEntry = zipEntries.find(entry => entry.entryName.endsWith('.exe'));
+				}
+
+				if (!whisperEntry) {
+					reject(new Error('Whisper executable not found in zip file'));
+					return;
+				}
+
+				// Extract the binary
+				zip.extractEntryTo(whisperEntry, destDir, false, true);
+
+				// Rename to whisper.exe if it has a different name
+				const extractedPath = path.join(destDir, path.basename(whisperEntry.entryName));
+				if (extractedPath !== this.whisperBinaryPath) {
+					if (fs.existsSync(this.whisperBinaryPath)) {
+						fs.unlinkSync(this.whisperBinaryPath);
+					}
+					fs.renameSync(extractedPath, this.whisperBinaryPath);
+				}
+
+				resolve();
+			} catch (error) {
+				reject(new Error(`Failed to extract binary: ${error.message}`));
+			}
+		});
 	}
 }
