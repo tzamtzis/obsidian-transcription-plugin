@@ -2,15 +2,7 @@
 
 ## High Priority
 
-### 1. Implement Ollama Processor for Local Analysis
-- [ ] Create OllamaProcessor class in `src/processors/OllamaProcessor.ts`
-- [ ] Implement text analysis using Ollama API (http://localhost:11434)
-- [ ] Add model selection in settings (llama2, mistral, etc.)
-- [ ] Parse Ollama response into summary/key points/action items
-- [ ] Update TranscriptionService to use Ollama when `analysisProvider === 'local-ollama'`
-- [ ] Add error handling for Ollama not running
-
-### 2. Testing with Real Audio Files
+### 1. Testing with Real Audio Files
 - [ ] Test with m4a files (various codecs)
 - [ ] Test with mp3 files (various bitrates)
 - [ ] Test with WAV files (verify 16kHz conversion skipping)
@@ -22,7 +14,7 @@
 - [ ] Test cloud analysis (OpenRouter)
 - [ ] Test error scenarios (corrupted files, network failures, etc.)
 
-### 3. Platform Support
+### 2. Platform Support
 - [ ] Add macOS support for whisper.cpp binary
   - Detect platform in LocalWhisperProcessor constructor
   - Update binary URL for macOS builds
@@ -34,7 +26,7 @@
 - [ ] Test on macOS
 - [ ] Test on Linux
 
-### 4. Output Formatting Improvements
+### 3. Output Formatting Improvements
 - [ ] Implement timestamp inclusion setting
   - Add timestamps to each segment when enabled
   - Format: `[00:01:23] Speaker text here`
@@ -49,14 +41,14 @@
 
 ## Medium Priority
 
-### 5. Speaker Diarization (Nice-to-Have)
+### 4. Speaker Diarization (Nice-to-Have)
 - [ ] Research diarization options compatible with whisper.cpp
 - [ ] Implement pyannote-audio integration (if feasible)
 - [ ] Add speaker count setting
 - [ ] Update transcript format to include speaker labels
 - [ ] Add speaker renaming UI in generated markdown
 
-### 6. Error Handling Improvements
+### 5. Error Handling Improvements
 - [ ] Add validation for API keys before making requests
 - [ ] Improve error messages for common failures
   - Missing ffmpeg
@@ -68,7 +60,7 @@
 - [ ] Implement request cancellation for cloud APIs
 - [ ] Add file size validation (warn for very large files)
 
-### 7. UI/UX Enhancements
+### 6. UI/UX Enhancements
 - [ ] Add progress modal during transcription
   - Show current step (transcribing/analyzing/saving)
   - Show progress bar
@@ -79,7 +71,7 @@
 - [ ] Add estimated time display based on audio duration
 - [ ] Add recent transcriptions list in settings
 
-### 8. File Management
+### 7. File Management
 - [ ] Implement duplicate file handling
   - Check if output markdown already exists
   - Offer to overwrite or create new version
@@ -90,14 +82,14 @@
 
 ## Low Priority
 
-### 9. Performance Optimization
+### 8. Performance Optimization
 - [ ] Implement streaming for very large audio files
 - [ ] Add chunking for 2+ hour audio files
 - [ ] Optimize memory usage during transcription
 - [ ] Add caching for repeated transcriptions
 - [ ] Implement parallel processing for multiple files
 
-### 10. Additional Features
+### 9. Additional Features
 - [ ] Batch transcription support
   - Select multiple audio files
   - Process sequentially or in parallel
@@ -117,7 +109,7 @@
   - Tasks plugin for action items
   - Dataview for transcript queries
 
-### 11. Documentation
+### 10. Documentation
 - [ ] Update README.md
   - Add setup instructions
   - Add usage guide with screenshots
@@ -129,7 +121,7 @@
 - [ ] Add FAQ section
 - [ ] Create video tutorial
 
-### 12. Code Quality
+### 11. Code Quality
 - [ ] Add comprehensive unit tests
   - Test each processor independently
   - Test TranscriptionService workflows
@@ -141,7 +133,7 @@
 - [ ] Add TypeScript strict mode compliance
 - [ ] Run linter and fix all warnings
 
-### 13. Security & Privacy
+### 12. Security & Privacy
 - [ ] Add warning about cloud processing privacy
 - [ ] Implement API key encryption in settings
 - [ ] Add option to exclude sensitive files from transcription
@@ -150,7 +142,7 @@
 
 ## Future Enhancements
 
-### 14. Advanced Features (Post-v1.0)
+### 13. Advanced Features (Post-v1.0)
 - [ ] Real-time transcription from microphone
 - [ ] Live meeting transcription
 - [ ] Multi-language support beyond Greek/English
@@ -181,9 +173,9 @@
 ## Release Checklist
 
 ### Pre-Release (v1.0.0)
-- [ ] Complete High Priority tasks (1-4)
-- [ ] Complete Medium Priority task 6 (Error Handling)
-- [ ] Complete Documentation (task 11)
+- [ ] Complete High Priority tasks (1-3)
+- [ ] Complete Medium Priority task 5 (Error Handling)
+- [ ] Complete Documentation (task 10)
 - [ ] Test on all platforms
 - [ ] Create release notes
 - [ ] Submit to Obsidian community plugins
