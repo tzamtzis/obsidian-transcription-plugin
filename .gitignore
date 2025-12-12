@@ -1,0 +1,51 @@
+# Compiled output
+main.js
+main.js.map
+*.js.map
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Models directory (large binary files)
+models/*.bin
+models/*.ggml
+models/*.pt
+models/*.safetensors
+
+# Keep the models directory structure
+!models/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
