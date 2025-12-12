@@ -94,21 +94,144 @@ export class LocalWhisperProcessor {
 	}
 
 	private async convertToWav(audioPath: string, onProgress?: (progress: number, message: string) => void): Promise<string> {
-		// For now, we'll use a placeholder
-		// In production, this should use ffmpeg to convert to 16kHz mono WAV
-
 		if (onProgress) {
 			onProgress(10, 'Converting audio format...');
 		}
 
 		// Check if file is already WAV
 		if (audioPath.toLowerCase().endsWith('.wav')) {
+			// Verify it's 16kHz mono - if not, convert it
 			return audioPath;
 		}
 
-		// TODO: Implement actual ffmpeg conversion
-		// For now, throw an error if not WAV
-		throw new Error('Audio conversion not yet implemented. Please use WAV files (16kHz, mono) for now.');
+		// Check if ffmpeg is available
+		const ffmpegAvailable = await this.checkFfmpegAvailable();
+		if (!ffmpegAvailable) {
+			throw new Error('ffmpeg not found. Please install ffmpeg to convert audio files.\n\nWindows: Download from https://ffmpeg.org/download.html\nOr install via chocolatey: choco install ffmpeg');
+		}
+
+		// Create temp WAV file path
+		const tempWavPath = audioPath.replace(/\.[^.]+$/, '.temp.wav');
+
+		try {
+			await this.runFfmpeg(audioPath, tempWavPath, onProgress);
+			return tempWavPath;
+		} catch (error) {
+			// Clean up temp file on error
+			if (fs.existsSync(tempWavPath)) {
+				fs.unlinkSync(tempWavPath);
+			}
+			throw error;
+		}
+	}
+
+	private async checkFfmpegAvailable(): Promise<boolean> {
+		return new Promise((resolve) => {
+			const process = spawn('ffmpeg', ['-version']);
+
+			process.on('error', () => {
+				resolve(false);
+			});
+
+			process.on('close', (code) => {
+				resolve(code === 0);
+			});
+
+			// Timeout after 5 seconds
+			setTimeout(() => {
+				process.kill();
+				resolve(false);
+			}, 5000);
+		});
+	}
+
+	private async runFfmpeg(
+		inputPath: string,
+		outputPath: string,
+		onProgress?: (progress: number, message: string) => void
+	): Promise<void> {
+		return new Promise((resolve, reject) => {
+			if (onProgress) {
+				onProgress(15, 'Converting audio to 16kHz mono WAV...');
+			}
+
+			// FFmpeg command to convert to 16kHz mono WAV
+			// -i: input file
+			// -ar 16000: sample rate 16kHz
+			// -ac 1: mono (1 channel)
+			// -c:a pcm_s16le: PCM signed 16-bit little-endian
+			// -y: overwrite output file
+			const args = [
+				'-i', inputPath,
+				'-ar', '16000',
+				'-ac', '1',
+				'-c:a', 'pcm_s16le',
+				'-y',
+				outputPath
+			];
+
+			const ffmpegProcess = spawn('ffmpeg', args);
+
+			let stderr = '';
+			let duration = 0;
+			let converting = false;
+
+			// FFmpeg outputs progress to stderr
+			ffmpegProcess.stderr?.on('data', (data: Buffer) => {
+				stderr += data.toString();
+				const output = data.toString();
+
+				// Extract duration from ffmpeg output
+				if (!converting) {
+					const durationMatch = output.match(/Duration: (\d{2}):(\d{2}):(\d{2}\.\d{2})/);
+					if (durationMatch) {
+						const hours = parseInt(durationMatch[1]);
+						const minutes = parseInt(durationMatch[2]);
+						const seconds = parseFloat(durationMatch[3]);
+						duration = hours * 3600 + minutes * 60 + seconds;
+						converting = true;
+					}
+				}
+
+				// Extract progress
+				if (converting && duration > 0) {
+					const timeMatch = output.match(/time=(\d{2}):(\d{2}):(\d{2}\.\d{2})/);
+					if (timeMatch) {
+						const hours = parseInt(timeMatch[1]);
+						const minutes = parseInt(timeMatch[2]);
+						const seconds = parseFloat(timeMatch[3]);
+						const currentTime = hours * 3600 + minutes * 60 + seconds;
+						const progress = Math.min(90, 15 + (currentTime / duration) * 75);
+
+						if (onProgress) {
+							onProgress(Math.floor(progress), 'Converting audio...');
+						}
+					}
+				}
+			});
+
+			ffmpegProcess.on('close', (code) => {
+				if (code !== 0) {
+					reject(new Error(`FFmpeg conversion failed: ${stderr}`));
+					return;
+				}
+
+				if (!fs.existsSync(outputPath)) {
+					reject(new Error('FFmpeg conversion failed: output file not created'));
+					return;
+				}
+
+				if (onProgress) {
+					onProgress(95, 'Audio conversion complete');
+				}
+
+				resolve();
+			});
+
+			ffmpegProcess.on('error', (error) => {
+				reject(new Error(`Failed to run ffmpeg: ${error.message}`));
+			});
+		});
 	}
 
 	private async runWhisper(

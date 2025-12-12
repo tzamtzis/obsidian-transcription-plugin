@@ -32,6 +32,7 @@ bin/
 # Temporary files
 *.tmp
 *.temp
+*.temp.wav
 .cache/
 
 # OS generated files
