@@ -49,16 +49,16 @@
 - [ ] Add speaker renaming UI in generated markdown
 
 ### 5. Error Handling Improvements
-- [ ] Add validation for API keys before making requests
-- [ ] Improve error messages for common failures
+- [x] Add validation for API keys before making requests
+- [x] Improve error messages for common failures
   - Missing ffmpeg
   - Missing whisper.cpp binary
   - Model not downloaded
   - API key invalid
   - Network timeout
-- [ ] Add proper error recovery for partial failures
-- [ ] Implement request cancellation for cloud APIs
-- [ ] Add file size validation (warn for very large files)
+- [x] Add proper error recovery for partial failures
+- [x] Implement request cancellation for cloud APIs (structure in place)
+- [x] Add file size validation (warn for files > 100MB)
 
 ### 6. UI/UX Enhancements
 - [ ] Add progress modal during transcription

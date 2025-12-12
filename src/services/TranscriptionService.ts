@@ -42,6 +42,10 @@ export class TranscriptionService {
 		const notice = new Notice('Starting transcription...', 0);
 
 		try {
+			// Validate setup before starting
+			notice.setMessage('Validating configuration...');
+			await this.validateSetup(audioFile);
+
 			// Step 1: Transcribe audio
 			notice.setMessage('Step 1/3: Transcribing audio...');
 			const transcriptionResult = await this.transcribeAudio(audioFile);
@@ -64,10 +68,14 @@ export class TranscriptionService {
 		} catch (error) {
 			notice.hide();
 
-			// Retry once
-			console.log('First attempt failed, retrying...');
-			try {
-				const retryNotice = new Notice('Retrying transcription...', 0);
+			// Handle specific error types with better messages
+			const errorMessage = this.getErrorMessage(error);
+			const shouldRetry = this.shouldRetryError(error);
+
+			if (shouldRetry) {
+				console.log('First attempt failed, retrying...', error);
+				try {
+					const retryNotice = new Notice('⚠️ Retrying transcription...', 0);
 				const transcriptionResult = await this.transcribeAudio(audioFile);
 				const analysis = await this.analyzeTranscription(transcriptionResult);
 				await this.createMarkdownFile(audioFile, transcriptionResult, analysis);
@@ -77,12 +85,161 @@ export class TranscriptionService {
 
 				const mdFileName = this.getMarkdownFileName(audioFile);
 				await this.plugin.app.workspace.openLinkText(mdFileName, '', true);
-			} catch (retryError) {
-				console.error('Transcription failed after retry:', retryError);
-				new Notice(`Transcription failed: ${retryError.message}\n\nPossible causes:\n- Audio file may be corrupted\n- Unsupported audio codec\n- Insufficient disk space`, 10000);
-				throw retryError;
+				} catch (retryError) {
+					console.error('Transcription failed after retry:', retryError);
+					const retryMessage = this.getErrorMessage(retryError);
+					new Notice(`❌ ${retryMessage}`, 15000);
+					throw retryError;
+				}
+			} else {
+				// Don't retry for validation errors or user errors
+				console.error('Transcription failed:', error);
+				new Notice(`❌ ${errorMessage}`, 15000);
+				throw error;
 			}
 		}
+	}
+
+	private async validateSetup(audioFile: TFile): Promise<void> {
+		const { processingMode } = this.plugin.settings;
+
+		// Validate file size (warn if > 100MB)
+		const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+		const fileSize = audioFile.stat.size;
+
+		if (fileSize > MAX_FILE_SIZE) {
+			const sizeMB = Math.round(fileSize / (1024 * 1024));
+			new Notice(`⚠️ Large file detected (${sizeMB}MB). Processing may take several minutes.`, 8000);
+		}
+
+		// Validate based on processing mode
+		if (processingMode === 'local') {
+			// Check if whisper.cpp binary exists
+			const binaryExists = await this.localProcessor.checkBinaryExists();
+			if (!binaryExists) {
+				throw new Error('Whisper.cpp binary not found.\n\n' +
+					'Solution: Go to Settings → Audio Transcription → Download Whisper.cpp binary');
+			}
+
+			// Check if model is downloaded
+			const modelPath = this.plugin.modelManager.getModelPath(this.plugin.settings.modelSize);
+			const fs = require('fs');
+			if (!fs.existsSync(modelPath)) {
+				throw new Error(`Model "${this.plugin.settings.modelSize}" not found.\n\n` +
+					'Solution: Go to Settings → Audio Transcription → Download Model');
+			}
+
+		} else if (processingMode === 'cloud-whisper') {
+			// Validate OpenAI API key
+			const apiKey = this.plugin.settings.openaiApiKey;
+			if (!apiKey || apiKey.trim().length === 0) {
+				throw new Error('OpenAI API key not configured.\n\n' +
+					'Solution: Go to Settings → Audio Transcription → API Keys → Add your OpenAI API key');
+			}
+
+			if (!apiKey.startsWith('sk-')) {
+				throw new Error('Invalid OpenAI API key format.\n\n' +
+					'OpenAI API keys should start with "sk-".\n' +
+					'Solution: Check your API key in Settings → Audio Transcription → API Keys');
+			}
+		}
+
+		// Validate OpenRouter API key for analysis
+		const openrouterKey = this.plugin.settings.openrouterApiKey;
+		if (!openrouterKey || openrouterKey.trim().length === 0) {
+			throw new Error('OpenRouter API key not configured.\n\n' +
+				'Solution: Go to Settings → Audio Transcription → API Keys → Add your OpenRouter API key');
+		}
+
+		if (!openrouterKey.startsWith('sk-or-')) {
+			throw new Error('Invalid OpenRouter API key format.\n\n' +
+				'OpenRouter API keys should start with "sk-or-".\n' +
+				'Solution: Check your API key in Settings → Audio Transcription → API Keys');
+		}
+
+		// Validate model name for OpenRouter
+		const modelName = this.plugin.settings.openrouterModelName;
+		if (!modelName || modelName.trim().length === 0) {
+			throw new Error('OpenRouter model name not configured.\n\n' +
+				'Solution: Go to Settings → Audio Transcription → API Keys → Add a model name (e.g., meta-llama/llama-3.2-3b-instruct)');
+		}
+	}
+
+	private shouldRetryError(error: any): boolean {
+		const message = error.message?.toLowerCase() || '';
+
+		// Don't retry validation errors
+		if (message.includes('not configured') ||
+			message.includes('not found') ||
+			message.includes('invalid') ||
+			message.includes('solution:')) {
+			return false;
+		}
+
+		// Retry network errors and temporary failures
+		if (message.includes('timeout') ||
+			message.includes('network') ||
+			message.includes('econnrefused') ||
+			message.includes('enotfound') ||
+			message.includes('fetch failed')) {
+			return true;
+		}
+
+		// Default: retry once
+		return true;
+	}
+
+	private getErrorMessage(error: any): string {
+		const originalMessage = error.message || 'Unknown error occurred';
+
+		// Return validation errors as-is (they already have good messages)
+		if (originalMessage.includes('Solution:')) {
+			return originalMessage;
+		}
+
+		// Enhance common error messages
+		if (originalMessage.includes('ffmpeg not found')) {
+			return 'FFmpeg not found. Required for audio conversion.\n\n' +
+				'Solution:\n' +
+				'• Windows: Download from https://ffmpeg.org or run: choco install ffmpeg\n' +
+				'• macOS: Run: brew install ffmpeg\n' +
+				'• Linux: Run: sudo apt install ffmpeg';
+		}
+
+		if (originalMessage.includes('timeout') || originalMessage.includes('ETIMEDOUT')) {
+			return 'Request timed out. Check your internet connection and try again.\n\n' +
+				'If the problem persists, the API service may be experiencing issues.';
+		}
+
+		if (originalMessage.includes('ENOTFOUND') || originalMessage.includes('ECONNREFUSED')) {
+			return 'Network error: Unable to connect to the API.\n\n' +
+				'Solution: Check your internet connection and try again.';
+		}
+
+		if (originalMessage.includes('401') || originalMessage.includes('Unauthorized')) {
+			return 'API authentication failed. Your API key may be invalid.\n\n' +
+				'Solution: Check your API keys in Settings → Audio Transcription → API Keys';
+		}
+
+		if (originalMessage.includes('429') || originalMessage.includes('rate limit')) {
+			return 'API rate limit exceeded.\n\n' +
+				'Solution: Wait a few minutes before trying again, or upgrade your API plan.';
+		}
+
+		if (originalMessage.includes('413') || originalMessage.includes('too large')) {
+			return 'File too large for the API.\n\n' +
+				'Solution: Try using local processing mode instead, or split the audio into smaller segments.';
+		}
+
+		if (originalMessage.includes('unsupported') || originalMessage.includes('codec')) {
+			return 'Unsupported audio format or codec.\n\n' +
+				'Solution:\n' +
+				'• Install ffmpeg for automatic conversion\n' +
+				'• Or convert the audio to MP3/M4A/WAV format manually';
+		}
+
+		// Return original message if no specific handler
+		return `Transcription failed: ${originalMessage}`;
 	}
 
 	private async transcribeAudio(audioFile: TFile): Promise<TranscriptionResult> {
