@@ -1,6 +1,8 @@
 import { TFile, Notice } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
 import { LocalWhisperProcessor } from '../processors/LocalWhisperProcessor';
+import { CloudWhisperProcessor } from '../processors/CloudWhisperProcessor';
+import { OpenRouterProcessor } from '../processors/OpenRouterProcessor';
 
 export interface TranscriptionResult {
 	text: string;
@@ -26,10 +28,14 @@ export class TranscriptionService {
 	private plugin: AudioTranscriptionPlugin;
 	private currentProgress: number = 0;
 	private localProcessor: LocalWhisperProcessor;
+	private cloudWhisperProcessor: CloudWhisperProcessor;
+	private openRouterProcessor: OpenRouterProcessor;
 
 	constructor(plugin: AudioTranscriptionPlugin) {
 		this.plugin = plugin;
 		this.localProcessor = new LocalWhisperProcessor(plugin);
+		this.cloudWhisperProcessor = new CloudWhisperProcessor(plugin);
+		this.openRouterProcessor = new OpenRouterProcessor(plugin);
 	}
 
 	async transcribe(audioFile: TFile): Promise<void> {
@@ -109,23 +115,36 @@ export class TranscriptionService {
 	}
 
 	private async transcribeCloudWhisper(audioFile: TFile): Promise<TranscriptionResult> {
-		// TODO: Implement OpenAI Whisper API integration
-		throw new Error('Cloud Whisper transcription not yet implemented');
+		// Get the audio file path
+		const audioPath = (this.plugin.app.vault.adapter as any).getFullPath(audioFile.path);
+
+		// Use CloudWhisperProcessor
+		return await this.cloudWhisperProcessor.transcribe(audioPath, (progress, message) => {
+			this.currentProgress = progress;
+		});
 	}
 
 	private async transcribeCloudOpenRouter(audioFile: TFile): Promise<TranscriptionResult> {
-		// TODO: Implement OpenRouter integration
-		throw new Error('OpenRouter transcription not yet implemented');
+		// OpenRouter doesn't support direct transcription
+		// Use OpenAI Whisper instead for now
+		throw new Error('OpenRouter transcription not supported. Please use "Cloud (OpenAI Whisper)" or "Local" mode for transcription.');
 	}
 
 	private async analyzeTranscription(result: TranscriptionResult): Promise<any> {
-		// TODO: Implement analysis using AnalysisService
-		return {
-			summary: 'Summary of the transcription',
-			keyPoints: ['Point 1', 'Point 2'],
-			actionItems: [],
-			followUps: []
-		};
+		const { analysisProvider, customInstructions } = this.plugin.settings;
+
+		if (analysisProvider === 'cloud-openrouter') {
+			// Use OpenRouter for analysis
+			return await this.openRouterProcessor.analyzeText(result.text, customInstructions);
+		} else {
+			// Use local Ollama (TODO: implement)
+			return {
+				summary: 'Analysis not yet implemented for local Ollama',
+				keyPoints: ['Please configure OpenRouter for AI analysis'],
+				actionItems: [],
+				followUps: []
+			};
+		}
 	}
 
 	private async createMarkdownFile(
@@ -215,7 +234,8 @@ ${transcription.text}
 
 	cancel(): void {
 		this.localProcessor.cancel();
-		// TODO: Implement cancellation for cloud processors
+		this.cloudWhisperProcessor.cancel();
+		this.openRouterProcessor.cancel();
 	}
 
 	getProgress(): number {
