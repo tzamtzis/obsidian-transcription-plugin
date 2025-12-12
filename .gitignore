@@ -25,6 +25,10 @@ models/*.safetensors
 # Keep the models directory structure
 !models/.gitkeep
 
+# Binary directory (whisper.cpp executables)
+bin/
+!bin/.gitkeep
+
 # Temporary files
 *.tmp
 *.temp

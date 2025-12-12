@@ -1,5 +1,6 @@
 import { TFile, Notice } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
+import { LocalWhisperProcessor } from '../processors/LocalWhisperProcessor';
 
 export interface TranscriptionResult {
 	text: string;
@@ -24,9 +25,11 @@ export interface SpeakerInfo {
 export class TranscriptionService {
 	private plugin: AudioTranscriptionPlugin;
 	private currentProgress: number = 0;
+	private localProcessor: LocalWhisperProcessor;
 
 	constructor(plugin: AudioTranscriptionPlugin) {
 		this.plugin = plugin;
+		this.localProcessor = new LocalWhisperProcessor(plugin);
 	}
 
 	async transcribe(audioFile: TFile): Promise<void> {
@@ -95,8 +98,14 @@ export class TranscriptionService {
 	}
 
 	private async transcribeLocal(audioFile: TFile): Promise<TranscriptionResult> {
-		// TODO: Implement Whisper.cpp integration
-		throw new Error('Local transcription not yet implemented');
+		// Get the audio file path
+		const audioPath = (this.plugin.app.vault.adapter as any).getFullPath(audioFile.path);
+
+		// Use LocalWhisperProcessor
+		return await this.localProcessor.transcribe(audioPath, (progress, message) => {
+			this.currentProgress = progress;
+			// Progress updates are handled by the Notice in the main transcribe method
+		});
 	}
 
 	private async transcribeCloudWhisper(audioFile: TFile): Promise<TranscriptionResult> {
@@ -205,7 +214,8 @@ ${transcription.text}
 	}
 
 	cancel(): void {
-		// TODO: Implement cancellation logic
+		this.localProcessor.cancel();
+		// TODO: Implement cancellation for cloud processors
 	}
 
 	getProgress(): number {
