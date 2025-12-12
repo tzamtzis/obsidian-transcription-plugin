@@ -142,13 +142,35 @@ export class TranscriptionService {
 		transcription: TranscriptionResult,
 		analysis: any
 	): Promise<void> {
-		// TODO: Use FileManager to create the markdown file
 		const mdFileName = this.getMarkdownFileName(audioFile);
+
+		// Ensure output folder exists
+		const outputFolder = this.plugin.settings.outputFolder;
+		if (outputFolder) {
+			await this.ensureFolderExists(outputFolder);
+		}
 
 		const content = this.formatMarkdown(audioFile, transcription, analysis);
 
 		// Create the file
 		await this.plugin.app.vault.create(mdFileName, content);
+	}
+
+	private async ensureFolderExists(folderPath: string): Promise<void> {
+		const folders = folderPath.split('/').filter(f => f.length > 0);
+		let currentPath = '';
+
+		for (const folder of folders) {
+			currentPath = currentPath ? `${currentPath}/${folder}` : folder;
+
+			// Check if folder exists
+			const existingFolder = this.plugin.app.vault.getAbstractFileByPath(currentPath);
+
+			if (!existingFolder) {
+				// Create folder if it doesn't exist
+				await this.plugin.app.vault.createFolder(currentPath);
+			}
+		}
 	}
 
 	private formatMarkdown(
@@ -167,21 +189,28 @@ tags: [meeting, transcription]
 
 `;
 
-		const header = `# Transcription: ${audioFile.basename}
+		const header = `# ${audioFile.basename}
 
-**Audio File:** ${audioFile.name}
-**Date:** ${new Date().toLocaleDateString()}
-**Duration:** ${this.formatDuration(transcription.duration)}
+> 🎙️ Audio Transcription
+> 📅 ${new Date().toLocaleDateString()} | ⏱️ ${this.formatDuration(transcription.duration)} | 🌐 ${transcription.language.toUpperCase()}
+
+`;
+
+		// Table of contents for longer transcripts
+		const hasTOC = transcription.duration > 600; // 10+ minutes
+		const toc = hasTOC ? `## Table of Contents
+
+- [Summary](#summary)
+- [Key Points](#key-points)
+${analysis.actionItems?.length > 0 ? '- [Action Items](#action-items)\n' : ''}${analysis.followUps?.length > 0 ? '- [Follow-up Questions](#follow-up-questions)\n' : ''}- [Full Transcription](#full-transcription)
 
 ---
 
-`;
+` : '';
 
 		const summarySection = `## Summary
 
 ${analysis.summary}
-
----
 
 `;
 
@@ -189,20 +218,69 @@ ${analysis.summary}
 
 ${analysis.keyPoints.map((p: string) => `- ${p}`).join('\n')}
 
----
-
 `;
 
-		const transcriptionSection = `## Full Transcription
+		// Add action items if available
+		const actionItemsSection = analysis.actionItems && analysis.actionItems.length > 0
+			? `## Action Items
 
-${transcription.text}
+${analysis.actionItems.map((item: string) => `- [ ] ${item}`).join('\n')}
 
----
+`
+			: '';
 
-[End of transcription]
+		// Add follow-up questions if available
+		const followUpSection = analysis.followUps && analysis.followUps.length > 0
+			? `## Follow-up Questions
+
+${analysis.followUps.map((q: string) => `- ${q}`).join('\n')}
+
+`
+			: '';
+
+		const transcriptionSection = this.formatTranscriptionSection(transcription);
+
+		const footer = `---
+
+*Generated with Obsidian Audio Transcription Plugin*`;
+
+		return frontmatter + header + toc + summarySection + keyPointsSection + actionItemsSection + followUpSection + transcriptionSection + footer;
+	}
+
+	private formatTranscriptionSection(transcription: TranscriptionResult): string {
+		const includeTimestamps = this.plugin.settings.includeTimestamps;
+		const segments = transcription.segments;
+
+		let transcriptText = '';
+
+		if (includeTimestamps && segments && segments.length > 0) {
+			// Format with timestamps and speaker labels
+			transcriptText = segments.map(segment => {
+				const timestamp = this.formatTimestamp(segment.start);
+				const speaker = segment.speaker !== undefined ? `**Speaker ${segment.speaker}:** ` : '';
+				return `[${timestamp}] ${speaker}${segment.text.trim()}`;
+			}).join('\n\n');
+		} else {
+			// Use plain text without timestamps
+			transcriptText = transcription.text;
+		}
+
+		return `## Full Transcription
+
+${transcriptText}
+
 `;
+	}
 
-		return frontmatter + header + summarySection + keyPointsSection + transcriptionSection;
+	private formatTimestamp(seconds: number): string {
+		const hours = Math.floor(seconds / 3600);
+		const minutes = Math.floor((seconds % 3600) / 60);
+		const secs = Math.floor(seconds % 60);
+
+		if (hours > 0) {
+			return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+		}
+		return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 	}
 
 	private getMarkdownFileName(audioFile: TFile): string {

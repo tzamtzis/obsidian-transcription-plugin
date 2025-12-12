@@ -27,16 +27,16 @@
 - [ ] Test on Linux
 
 ### 3. Output Formatting Improvements
-- [ ] Implement timestamp inclusion setting
+- [x] Implement timestamp inclusion setting
   - Add timestamps to each segment when enabled
   - Format: `[00:01:23] Speaker text here`
-- [ ] Implement output folder creation
+- [x] Implement output folder creation
   - Create folder if it doesn't exist
   - Handle nested folder paths
-- [ ] Add speaker labels to transcript when diarization is available
-- [ ] Improve markdown formatting
+- [x] Add speaker labels to transcript when diarization is available
+- [x] Improve markdown formatting
   - Better section spacing
-  - Add table of contents for long transcripts
+  - Add table of contents for long transcripts (10+ minutes)
   - Add metadata section with file info
 
 ## Medium Priority
