@@ -3,6 +3,7 @@ import AudioTranscriptionPlugin from '../main';
 import { LocalWhisperProcessor } from '../processors/LocalWhisperProcessor';
 import { CloudWhisperProcessor } from '../processors/CloudWhisperProcessor';
 import { OpenRouterProcessor } from '../processors/OpenRouterProcessor';
+import { TranscriptionProgressModal } from '../ui/TranscriptionProgressModal';
 
 export interface TranscriptionResult {
 	text: string;
@@ -39,26 +40,34 @@ export class TranscriptionService {
 	}
 
 	async transcribe(audioFile: TFile): Promise<void> {
-		const notice = new Notice('Starting transcription...', 0);
+		// Create progress modal
+		const progressModal = new TranscriptionProgressModal(
+			this.plugin.app,
+			() => this.cancel()
+		);
+		progressModal.open();
 
 		try {
 			// Validate setup before starting
-			notice.setMessage('Validating configuration...');
+			progressModal.updateProgress('validation', 5);
 			await this.validateSetup(audioFile);
 
 			// Step 1: Transcribe audio
-			notice.setMessage('Step 1/3: Transcribing audio...');
+			progressModal.updateProgress('transcription', 10);
 			const transcriptionResult = await this.transcribeAudio(audioFile);
+			progressModal.updateProgress('transcription', 60);
 
 			// Step 2: Analyze content
-			notice.setMessage('Step 2/3: Analyzing content...');
+			progressModal.updateProgress('analysis', 65);
 			const analysis = await this.analyzeTranscription(transcriptionResult);
+			progressModal.updateProgress('analysis', 85);
 
 			// Step 3: Create markdown file
-			notice.setMessage('Step 3/3: Creating markdown file...');
+			progressModal.updateProgress('saving', 90);
 			await this.createMarkdownFile(audioFile, transcriptionResult, analysis);
 
-			notice.hide();
+			// Complete
+			progressModal.markComplete();
 			new Notice(' Transcription complete!');
 
 			// Open the created file
@@ -66,21 +75,26 @@ export class TranscriptionService {
 			await this.plugin.app.workspace.openLinkText(mdFileName, '', true);
 
 		} catch (error) {
-			notice.hide();
+			// Check if user cancelled
+			if (progressModal.isCancelled()) {
+				progressModal.close();
+				new Notice('⚠️ Transcription cancelled');
+				return;
+			}
 
 			// Handle specific error types with better messages
 			const errorMessage = this.getErrorMessage(error);
 			const shouldRetry = this.shouldRetryError(error);
 
 			if (shouldRetry) {
+				progressModal.updateProgress('transcription', 10, '⚠️ Retrying transcription...');
 				console.log('First attempt failed, retrying...', error);
 				try {
-					const retryNotice = new Notice('⚠️ Retrying transcription...', 0);
 				const transcriptionResult = await this.transcribeAudio(audioFile);
 				const analysis = await this.analyzeTranscription(transcriptionResult);
 				await this.createMarkdownFile(audioFile, transcriptionResult, analysis);
 
-				retryNotice.hide();
+				
 				new Notice(' Transcription complete (after retry)!');
 
 				const mdFileName = this.getMarkdownFileName(audioFile);
@@ -88,13 +102,13 @@ export class TranscriptionService {
 				} catch (retryError) {
 					console.error('Transcription failed after retry:', retryError);
 					const retryMessage = this.getErrorMessage(retryError);
-					new Notice(`❌ ${retryMessage}`, 15000);
+					progressModal.markError(retryMessage);
 					throw retryError;
 				}
 			} else {
 				// Don't retry for validation errors or user errors
 				console.error('Transcription failed:', error);
-				new Notice(`❌ ${errorMessage}`, 15000);
+				progressModal.markError(errorMessage);
 				throw error;
 			}
 		}

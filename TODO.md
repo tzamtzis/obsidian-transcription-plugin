@@ -61,10 +61,10 @@
 - [x] Add file size validation (warn for files > 100MB)
 
 ### 6. UI/UX Enhancements
-- [ ] Add progress modal during transcription
+- [x] Add progress modal during transcription
   - Show current step (transcribing/analyzing/saving)
-  - Show progress bar
-  - Add cancel button
+  - Show progress bar with color coding
+  - Add cancel button with cleanup
 - [ ] Add ribbon icon customization
 - [ ] Show binary status in settings (downloaded/not downloaded)
 - [ ] Add model size recommendations based on system specs
