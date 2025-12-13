@@ -507,6 +507,7 @@ Want the AI to focus on specific things? Add custom instructions:
 **Examples:**
 
 **For project meetings:**
+
 ```text
 - Tag all participants with @ symbol
 - Identify technical decisions and mark with [DECISION]
@@ -515,6 +516,7 @@ Want the AI to focus on specific things? Add custom instructions:
 ```
 
 **For lecture notes:**
+
 ```text
 - Extract key concepts and definitions
 - Create a glossary of technical terms
@@ -523,6 +525,7 @@ Want the AI to focus on specific things? Add custom instructions:
 ```
 
 **For interviews:**
+
 ```text
 - Identify main themes discussed
 - Extract interesting quotes verbatim
@@ -539,12 +542,14 @@ Want the AI to focus on specific things? Add custom instructions:
 **Scenario:** You recorded a 45-minute team standup meeting with 4 participants.
 
 **Steps:**
+
 1. Save recording as `team-standup-2025-01-15.m4a` in your vault
 2. Right-click → "Transcribe audio file"
 3. Wait ~8-12 minutes (medium model, local processing)
 4. Open the generated `team-standup-2025-01-15.md` file
 
 **Result:** You get a complete transcription with:
+
 - Each person's comments identified
 - Action items automatically extracted as checkboxes
 - Key decisions highlighted
@@ -555,6 +560,7 @@ Want the AI to focus on specific things? Add custom instructions:
 **Scenario:** 1-hour client discussion with sensitive information. Privacy is critical.
 
 **Steps:**
+
 1. Ensure you're using local processing (no cloud APIs)
 2. Record and save as `client-call-acme-corp.m4a`
 3. Add custom instruction: "Identify all commitments made to the client"
@@ -567,6 +573,7 @@ Want the AI to focus on specific things? Add custom instructions:
 **Scenario:** 90-minute university lecture in Greek
 
 **Steps:**
+
 1. Use large model for best Greek support
 2. Set language to "Greek only" or "Auto-detect"
 3. Add custom instruction: "Extract key concepts and create a glossary of technical terms"
@@ -579,6 +586,7 @@ Want the AI to focus on specific things? Add custom instructions:
 **Scenario:** Meeting where participants switch between English and Greek
 
 **Steps:**
+
 1. Use medium or large model
 2. Set language to "Multilingual (both)" or "Auto-detect"
 3. Transcribe
@@ -616,6 +624,7 @@ Want the AI to focus on specific things? Add custom instructions:
 ### Privacy & Data Flow
 
 **Local Processing:**
+
 ```text
 Your Audio File → Your Computer → Whisper Model → Transcription
                                         ↓
@@ -623,9 +632,11 @@ Your Audio File → Your Computer → Whisper Model → Transcription
                                         ↓
                             Your Vault (.md file)
 ```
+
 Nothing leaves your computer. Complete privacy.
 
 **Cloud Processing:**
+
 ```text
 Your Audio File → OpenAI/OpenRouter API → Transcription
                                                 ↓
@@ -633,6 +644,7 @@ Your Audio File → OpenAI/OpenRouter API → Transcription
                                                 ↓
                             Your Vault (.md file)
 ```
+
 Audio and transcript sent to external servers. Review your API provider's privacy policy.
 
 ---
@@ -644,6 +656,7 @@ Audio and transcript sent to external servers. Review your API provider's privac
 **Q: How accurate is the transcription?**
 
 A: Using the medium or large model, transcription accuracy is typically 90-95% for clear audio in English or Greek. Accuracy depends on:
+
 - Audio quality (clear recordings work best)
 - Background noise (quiet environments ideal)
 - Speaker clarity (distinct voices help)
@@ -660,6 +673,7 @@ A: Currently .m4a and .mp3 files. Support for .wav, .ogg, and .flac may be added
 **Q: How long does transcription take?**
 
 A: Processing time varies:
+
 - Small model: ~0.1-0.2x realtime (10-min audio = 1-2 min processing)
 - Medium model: ~0.3-0.5x realtime (1-hour audio = 18-30 min processing)
 - Large model: ~0.5-1x realtime (1-hour audio = 30-60 min processing)
@@ -686,6 +700,7 @@ A: You can still use cloud analysis via OpenRouter, or skip the analysis step an
 **Q: How much disk space do I need?**
 
 A: Model sizes:
+
 - Tiny: 75 MB
 - Base: 142 MB
 - Small: 466 MB
@@ -707,6 +722,7 @@ A: Go to Settings → Audio Transcription → Model Management and download your
 **Q: The transcription is very inaccurate**
 
 A: Try these solutions:
+
 - Upgrade to a larger model (medium or large)
 - Check audio quality - clear recordings work best
 - Set the correct language instead of auto-detect
@@ -719,6 +735,7 @@ A: The markdown file might be in your configured output folder. Check Settings �
 **Q: Processing is very slow**
 
 A:
+
 - Local processing is CPU-intensive. Close other applications.
 - Try a smaller model (small instead of medium)
 - Consider using cloud processing for faster results
@@ -756,6 +773,7 @@ With cloud processing: Audio is sent to API provider (OpenAI, OpenRouter). Check
 **Q: How much do cloud APIs cost?**
 
 A: Approximate costs:
+
 - OpenAI Whisper: $0.006/minute ($7.20 per 20 hours)
 - OpenRouter: Varies by model, often cheaper
 - Local processing: Free (after model download)
@@ -769,6 +787,7 @@ A: No. This plugin works with free Obsidian.
 ## Roadmap
 
 ### Current Features (v1.0)
+
 - ✓ Local Whisper.cpp transcription
 - ✓ Cloud transcription (OpenAI, OpenRouter)
 - ✓ Greek and English language support
@@ -781,17 +800,20 @@ A: No. This plugin works with free Obsidian.
 ### Planned Features (Future Versions)
 
 **v1.1 - Enhanced Analysis**
+
 - Custom prompt templates
 - Multiple analysis profiles (meeting, lecture, interview)
 - Improved speaker identification
 - Export to other formats (PDF, DOCX)
 
 **v1.2 - Speaker Diarization**
+
 - Full speaker identification
 - Speaker labeling and naming
 - Improved multi-speaker accuracy
 
 **v2.0 - Advanced Features**
+
 - Real-time transcription during recording
 - Video file support (auto-extract audio)
 - Batch processing (multiple files at once)
@@ -799,6 +821,7 @@ A: No. This plugin works with free Obsidian.
 - Integration with other plugins (Calendar, Tasks)
 
 **Community Requests**
+
 - Your feedback shapes the roadmap! Submit feature requests on GitHub.
 
 ---
@@ -815,6 +838,7 @@ A: No. This plugin works with free Obsidian.
 ### Contributing
 
 This is an open-source project! Contributions welcome:
+
 - Report bugs
 - Suggest features
 - Submit pull requests
@@ -830,11 +854,13 @@ MIT License - Free to use, modify, and distribute.
 ## Credits
 
 **Built with:**
+
 - [Whisper.cpp](https://github.com/ggerganov/whisper.cpp) - Fast C++ implementation of OpenAI Whisper
 - [Obsidian API](https://github.com/obsidianmd/obsidian-api) - Plugin framework
 - [OpenAI Whisper](https://openai.com/research/whisper) - Original transcription model
 
 **Special Thanks:**
+
 - OpenAI for creating Whisper
 - Georgi Gerganov for whisper.cpp
 - Obsidian team for the amazing plugin API
@@ -845,6 +871,7 @@ MIT License - Free to use, modify, and distribute.
 ## Changelog
 
 ### v1.0.0 (TBD)
+
 - Initial release
 - Local and cloud transcription
 - Greek and English support

@@ -7,6 +7,7 @@ export default class AudioTranscriptionPlugin extends Plugin {
 	settings: AudioTranscriptionSettings;
 	transcriptionService: TranscriptionService;
 	modelManager: ModelManager;
+	ribbonIconEl: HTMLElement | null = null;
 
 	async onload() {
 		console.log('Loading Audio Transcription Plugin');
@@ -18,9 +19,13 @@ export default class AudioTranscriptionPlugin extends Plugin {
 		this.transcriptionService = new TranscriptionService(this);
 
 		// Add ribbon icon for transcription
-		this.addRibbonIcon('microphone', 'Transcribe audio file', async () => {
-			await this.selectAndTranscribeAudioFile();
-		});
+		this.ribbonIconEl = this.addRibbonIcon(
+			this.settings.ribbonIcon,
+			'Transcribe audio file',
+			async () => {
+				await this.selectAndTranscribeAudioFile();
+			}
+		);
 
 		// Register file menu event for context menu
 		this.registerEvent(
@@ -55,6 +60,18 @@ export default class AudioTranscriptionPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+	}
+
+	updateRibbonIcon(iconName: string) {
+		if (this.ribbonIconEl) {
+			// Update the icon using Obsidian's setIcon method
+			const iconEl = this.ribbonIconEl.querySelector('.svg-icon');
+			if (iconEl) {
+				iconEl.empty();
+				// Use Obsidian's icon system
+				(this.app as any).setIcon(iconEl, iconName);
+			}
+		}
 	}
 
 	private isAudioFile(file: TFile): boolean {

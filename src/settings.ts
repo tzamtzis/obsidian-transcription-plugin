@@ -25,6 +25,9 @@ export interface AudioTranscriptionSettings {
 	includeTimestamps: boolean;
 	autoCreateTags: boolean;
 	skipIfAnalyzed: boolean;
+
+	// UI settings
+	ribbonIcon: string;
 }
 
 export const DEFAULT_SETTINGS: AudioTranscriptionSettings = {
@@ -39,7 +42,8 @@ export const DEFAULT_SETTINGS: AudioTranscriptionSettings = {
 	outputFolder: 'Transcriptions',
 	includeTimestamps: true,
 	autoCreateTags: true,
-	skipIfAnalyzed: true
+	skipIfAnalyzed: true,
+	ribbonIcon: 'microphone'
 };
 
 export class AudioTranscriptionSettingTab extends PluginSettingTab {
@@ -50,7 +54,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	display(): void {
+	async display(): Promise<void> {
 		const { containerEl } = this;
 		containerEl.empty();
 
@@ -291,6 +295,44 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 					this.plugin.settings.skipIfAnalyzed = value;
 					await this.plugin.saveSettings();
 				}));
+
+		// ========================================
+		// UI SETTINGS
+		// ========================================
+		containerEl.createEl('h3', { text: 'UI Settings' });
+
+		new Setting(containerEl)
+			.setName('Ribbon icon')
+			.setDesc('Choose the icon displayed in the sidebar ribbon')
+			.addDropdown(dropdown => dropdown
+				.addOption('microphone', '🎤 Microphone')
+				.addOption('audio-file', '🎵 Audio File')
+				.addOption('headphones', '🎧 Headphones')
+				.addOption('mic', '🎙️ Mic')
+				.addOption('audio-lines', '🎚️ Audio Lines')
+				.addOption('volume-2', '🔊 Volume')
+				.addOption('radio', '📻 Radio')
+				.addOption('podcast', '🎙️ Podcast')
+				.setValue(this.plugin.settings.ribbonIcon)
+				.onChange(async (value) => {
+					this.plugin.settings.ribbonIcon = value;
+					await this.plugin.saveSettings();
+					this.plugin.updateRibbonIcon(value);
+				}));
+
+		// ========================================
+		// STATUS INFORMATION
+		// ========================================
+		if (this.plugin.settings.processingMode === 'local') {
+			containerEl.createEl('h3', { text: 'System Status' });
+
+			// Binary status
+			const binaryStatusDiv = containerEl.createDiv({ cls: 'status-section' });
+			await this.displayBinaryStatus(binaryStatusDiv);
+
+			// Add some spacing
+			containerEl.createEl('div', { cls: 'setting-item-separator' });
+		}
 	}
 
 	private async displayModelStatus(containerEl: HTMLElement) {
@@ -320,6 +362,41 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 			if (selected) {
 				item.style.fontWeight = 'bold';
 			}
+		}
+	}
+
+	private async displayBinaryStatus(containerEl: HTMLElement) {
+		containerEl.empty();
+
+		const setting = new Setting(containerEl)
+			.setName('Whisper.cpp Binary')
+			.setDesc('Status of the local transcription binary');
+
+		// Check if binary exists
+		const binaryExists = await this.plugin.transcriptionService.localProcessor.checkBinaryExists();
+
+		if (binaryExists) {
+			setting.setDesc('✅ Binary installed and ready');
+			setting.descEl.style.color = 'var(--text-success)';
+		} else {
+			setting.setDesc('❌ Binary not installed. Download it from Model Management section above.');
+			setting.descEl.style.color = 'var(--text-error)';
+		}
+
+		// Add current model status
+		const modelSetting = new Setting(containerEl)
+			.setName('Selected Model')
+			.setDesc('Status of the currently selected Whisper model');
+
+		const modelExists = await this.plugin.modelManager.checkModelExists(this.plugin.settings.modelSize);
+		const modelName = `${this.plugin.settings.modelSize}.bin`;
+
+		if (modelExists) {
+			modelSetting.setDesc(`✅ Model "${modelName}" is installed`);
+			modelSetting.descEl.style.color = 'var(--text-success)';
+		} else {
+			modelSetting.setDesc(`❌ Model "${modelName}" is not installed. Download it from Model Management section above.`);
+			modelSetting.descEl.style.color = 'var(--text-error)';
 		}
 	}
 }
