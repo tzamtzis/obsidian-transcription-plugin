@@ -4,6 +4,7 @@ import { LocalWhisperProcessor } from '../processors/LocalWhisperProcessor';
 import { CloudWhisperProcessor } from '../processors/CloudWhisperProcessor';
 import { OpenRouterProcessor } from '../processors/OpenRouterProcessor';
 import { TranscriptionProgressModal } from '../ui/TranscriptionProgressModal';
+import { getAudioDuration, estimateTranscriptionTime, formatEstimatedTime } from '../utils/audio';
 
 export interface TranscriptionResult {
 	text: string;
@@ -40,6 +41,22 @@ export class TranscriptionService {
 	}
 
 	async transcribe(audioFile: TFile): Promise<void> {
+		// Get audio file path for duration estimation
+		const audioPath = (this.plugin.app.vault.adapter as any).getFullPath(audioFile.path);
+
+		// Get audio duration and show estimate
+		const audioDuration = await getAudioDuration(audioPath);
+		if (audioDuration > 0) {
+			const isLocal = this.plugin.settings.processingMode === 'local';
+			const estimatedTime = estimateTranscriptionTime(
+				audioDuration,
+				this.plugin.settings.modelSize,
+				isLocal
+			);
+			const formattedEstimate = formatEstimatedTime(estimatedTime);
+			new Notice(`Starting transcription. Estimated time: ${formattedEstimate}`, 5000);
+		}
+
 		// Create progress modal
 		const progressModal = new TranscriptionProgressModal(
 			this.plugin.app,
@@ -325,6 +342,9 @@ export class TranscriptionService {
 
 		// Create the file
 		await this.plugin.app.vault.create(mdFileName, content);
+
+		// Add to recent transcriptions
+		await this.addToRecentTranscriptions(audioFile, mdFileName, transcription);
 	}
 
 	private async ensureFolderExists(folderPath: string): Promise<void> {
@@ -479,5 +499,32 @@ ${transcriptText}
 
 	getProgress(): number {
 		return this.currentProgress;
+	}
+
+	private async addToRecentTranscriptions(
+		audioFile: TFile,
+		markdownPath: string,
+		transcription: TranscriptionResult
+	): Promise<void> {
+		const recentEntry = {
+			audioFileName: audioFile.name,
+			markdownPath: markdownPath,
+			transcribedDate: new Date().toISOString(),
+			duration: this.formatDuration(transcription.duration),
+			language: transcription.language
+		};
+
+		// Add to beginning of array
+		this.plugin.settings.recentTranscriptions.unshift(recentEntry);
+
+		// Keep only max number of entries
+		const maxEntries = this.plugin.settings.maxRecentTranscriptions;
+		if (this.plugin.settings.recentTranscriptions.length > maxEntries) {
+			this.plugin.settings.recentTranscriptions =
+				this.plugin.settings.recentTranscriptions.slice(0, maxEntries);
+		}
+
+		// Save settings
+		await this.plugin.saveSettings();
 	}
 }

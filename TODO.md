@@ -73,9 +73,9 @@
   - Add cancel button with cleanup
 - [x] Add ribbon icon customization (8 icon options)
 - [x] Show binary and model status in settings
-- [ ] Add model size recommendations based on system specs
-- [ ] Add estimated time display based on audio duration
-- [ ] Add recent transcriptions list in settings
+- [x] Add model size recommendations based on system specs
+- [x] Add estimated time display based on audio duration
+- [x] Add recent transcriptions list in settings
 
 ### 7. File Management
 

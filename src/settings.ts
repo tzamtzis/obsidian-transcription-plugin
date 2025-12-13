@@ -1,9 +1,18 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import AudioTranscriptionPlugin from './main';
+import * as os from 'os';
 
 export type ModelSize = 'tiny' | 'base' | 'small' | 'medium' | 'large';
 export type ProcessingMode = 'local' | 'cloud-whisper' | 'cloud-openrouter';
 export type Language = 'auto' | 'en' | 'el' | 'multilingual';
+
+export interface RecentTranscription {
+	audioFileName: string;
+	markdownPath: string;
+	transcribedDate: string;
+	duration: string;
+	language: string;
+}
 
 export interface AudioTranscriptionSettings {
 	// Transcription settings
@@ -28,6 +37,10 @@ export interface AudioTranscriptionSettings {
 
 	// UI settings
 	ribbonIcon: string;
+
+	// Recent transcriptions
+	recentTranscriptions: RecentTranscription[];
+	maxRecentTranscriptions: number;
 }
 
 export const DEFAULT_SETTINGS: AudioTranscriptionSettings = {
@@ -43,7 +56,9 @@ export const DEFAULT_SETTINGS: AudioTranscriptionSettings = {
 	includeTimestamps: true,
 	autoCreateTags: true,
 	skipIfAnalyzed: true,
-	ribbonIcon: 'microphone'
+	ribbonIcon: 'microphone',
+	recentTranscriptions: [],
+	maxRecentTranscriptions: 10
 };
 
 export class AudioTranscriptionSettingTab extends PluginSettingTab {
@@ -57,6 +72,9 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 	async display(): Promise<void> {
 		const { containerEl } = this;
 		containerEl.empty();
+
+		// Add styles for recent transcriptions
+		this.addRecentTranscriptionsStyles();
 
 		containerEl.createEl('h2', { text: 'Audio Transcription Settings' });
 
@@ -94,7 +112,16 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 					.onChange(async (value: ModelSize) => {
 						this.plugin.settings.modelSize = value;
 						await this.plugin.saveSettings();
+						this.display(); // Refresh to update recommendation
 					}));
+
+			// Show system-based recommendation
+			const recommendationDiv = containerEl.createDiv({ cls: 'setting-item-description' });
+			recommendationDiv.style.marginTop = '-8px';
+			recommendationDiv.style.marginBottom = '16px';
+			recommendationDiv.style.paddingLeft = '0';
+			recommendationDiv.style.fontSize = '13px';
+			recommendationDiv.setText(this.getModelRecommendationText());
 		}
 
 		new Setting(containerEl)
@@ -321,6 +348,57 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 				}));
 
 		// ========================================
+		// RECENT TRANSCRIPTIONS
+		// ========================================
+		containerEl.createEl('h3', { text: 'Recent Transcriptions' });
+
+		if (this.plugin.settings.recentTranscriptions.length === 0) {
+			containerEl.createEl('p', {
+				text: 'No recent transcriptions yet. Your transcriptions will appear here.',
+				cls: 'setting-item-description'
+			});
+		} else {
+			// Display recent transcriptions list
+			const listContainer = containerEl.createDiv({ cls: 'recent-transcriptions-list' });
+
+			for (const recent of this.plugin.settings.recentTranscriptions) {
+				const itemDiv = listContainer.createDiv({ cls: 'recent-transcription-item' });
+
+				// Create clickable link
+				const link = itemDiv.createEl('a', {
+					text: recent.audioFileName,
+					cls: 'recent-transcription-link'
+				});
+				link.addEventListener('click', async (e) => {
+					e.preventDefault();
+					await this.plugin.app.workspace.openLinkText(recent.markdownPath, '', true);
+				});
+
+				// Add metadata
+				const metadata = itemDiv.createDiv({ cls: 'recent-transcription-meta' });
+				const dateObj = new Date(recent.transcribedDate);
+				const formattedDate = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+				metadata.setText(`${formattedDate} • ${recent.duration} • ${recent.language.toUpperCase()}`);
+			}
+
+			// Add clear button
+			new Setting(containerEl)
+				.setName('Clear history')
+				.setDesc('Remove all entries from recent transcriptions')
+				.addButton(button => button
+					.setButtonText('Clear All')
+					.setWarning()
+					.onClick(async () => {
+						this.plugin.settings.recentTranscriptions = [];
+						await this.plugin.saveSettings();
+						this.display(); // Refresh to show empty state
+					}));
+		}
+
+		// Add some spacing
+		containerEl.createEl('div', { cls: 'setting-item-separator' });
+
+		// ========================================
 		// STATUS INFORMATION
 		// ========================================
 		if (this.plugin.settings.processingMode === 'local') {
@@ -398,5 +476,106 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 			modelSetting.setDesc(`❌ Model "${modelName}" is not installed. Download it from Model Management section above.`);
 			modelSetting.descEl.style.color = 'var(--text-error)';
 		}
+	}
+
+	private getSystemSpecs(): { totalMemoryGB: number; cpuCores: number } {
+		const totalMemoryBytes = os.totalmem();
+		const totalMemoryGB = Math.round(totalMemoryBytes / (1024 * 1024 * 1024));
+		const cpuCores = os.cpus().length;
+		return { totalMemoryGB, cpuCores };
+	}
+
+	private getRecommendedModelSize(): ModelSize {
+		const { totalMemoryGB } = this.getSystemSpecs();
+
+		// Model memory requirements (approximate):
+		// Tiny: ~400 MB RAM
+		// Base: ~600 MB RAM
+		// Small: ~1.5 GB RAM
+		// Medium: ~3 GB RAM
+		// Large: ~6 GB RAM
+
+		if (totalMemoryGB < 4) {
+			return 'tiny';
+		} else if (totalMemoryGB < 8) {
+			return 'base';
+		} else if (totalMemoryGB < 12) {
+			return 'small';
+		} else if (totalMemoryGB < 20) {
+			return 'medium';
+		} else {
+			return 'large';
+		}
+	}
+
+	private getModelRecommendationText(): string {
+		const { totalMemoryGB, cpuCores } = this.getSystemSpecs();
+		const recommended = this.getRecommendedModelSize();
+		const current = this.plugin.settings.modelSize;
+
+		let text = `System: ${totalMemoryGB} GB RAM, ${cpuCores} CPU cores. `;
+
+		if (current === recommended) {
+			text += `✅ "${current}" model is optimal for your system.`;
+		} else {
+			const comparison = this.compareModelSize(current, recommended);
+			if (comparison > 0) {
+				text += `⚠️ "${current}" model may be slow. Consider "${recommended}" for better performance.`;
+			} else {
+				text += `💡 Your system can handle "${recommended}" for better accuracy.`;
+			}
+		}
+
+		return text;
+	}
+
+	private compareModelSize(a: ModelSize, b: ModelSize): number {
+		const sizes: ModelSize[] = ['tiny', 'base', 'small', 'medium', 'large'];
+		return sizes.indexOf(a) - sizes.indexOf(b);
+	}
+
+	private addRecentTranscriptionsStyles() {
+		// Check if styles already added
+		if (document.getElementById('recent-transcriptions-styles')) {
+			return;
+		}
+
+		const style = document.createElement('style');
+		style.id = 'recent-transcriptions-styles';
+		style.textContent = `
+			.recent-transcriptions-list {
+				margin-bottom: 16px;
+			}
+
+			.recent-transcription-item {
+				padding: 8px 12px;
+				margin-bottom: 8px;
+				background-color: var(--background-secondary);
+				border-radius: 4px;
+				border-left: 3px solid var(--interactive-accent);
+			}
+
+			.recent-transcription-item:hover {
+				background-color: var(--background-secondary-alt);
+			}
+
+			.recent-transcription-link {
+				color: var(--text-normal);
+				text-decoration: none;
+				font-weight: 500;
+				cursor: pointer;
+			}
+
+			.recent-transcription-link:hover {
+				color: var(--interactive-accent);
+			}
+
+			.recent-transcription-meta {
+				font-size: 12px;
+				color: var(--text-muted);
+				margin-top: 4px;
+			}
+		`;
+		document.head.appendChild(style);
 	}
 }
