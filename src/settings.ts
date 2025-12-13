@@ -20,6 +20,7 @@ export interface AudioTranscriptionSettings {
 	modelSize: ModelSize;
 	language: Language;
 	enableDiarization: boolean;
+	speakerCount: number;
 
 	// Analysis settings (cloud-only via OpenRouter)
 	customInstructions: string;
@@ -48,6 +49,7 @@ export const DEFAULT_SETTINGS: AudioTranscriptionSettings = {
 	modelSize: 'medium',
 	language: 'auto',
 	enableDiarization: false,
+	speakerCount: 2,
 	customInstructions: '',
 	openaiApiKey: '',
 	openrouterApiKey: '',
@@ -140,13 +142,50 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Enable speaker diarization')
-			.setDesc('Identify and label different speakers in the audio (requires cloud processing or advanced setup)')
+			.setDesc('Identify and label different speakers in the audio')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.enableDiarization)
 				.onChange(async (value) => {
 					this.plugin.settings.enableDiarization = value;
 					await this.plugin.saveSettings();
+					this.display(); // Refresh to show/hide speaker count
 				}));
+
+		// Show diarization info and speaker count when enabled
+		if (this.plugin.settings.enableDiarization) {
+			// Info about diarization status
+			const infoDiv = containerEl.createDiv({ cls: 'setting-item-description' });
+			infoDiv.style.marginTop = '-8px';
+			infoDiv.style.marginBottom = '12px';
+			infoDiv.style.padding = '8px 12px';
+			infoDiv.style.backgroundColor = 'var(--background-secondary)';
+			infoDiv.style.borderRadius = '4px';
+			infoDiv.style.fontSize = '13px';
+
+			infoDiv.innerHTML = `
+				<strong>ℹ️ Speaker Diarization Status:</strong><br/>
+				<span style="color: var(--text-muted);">
+				Currently, the plugin structure supports speaker labels, but automatic speaker detection is not yet implemented.<br/><br/>
+				<strong>Future options:</strong><br/>
+				• Cloud services (AssemblyAI, Deepgram) - Coming soon<br/>
+				• Local diarization (pyannote-audio) - Requires Python setup<br/><br/>
+				For now, you can manually edit speaker labels in the generated markdown files.
+				</span>
+			`;
+
+			// Speaker count setting
+			new Setting(containerEl)
+				.setName('Expected speaker count')
+				.setDesc('Number of speakers expected in the audio (used when diarization is implemented)')
+				.addSlider(slider => slider
+					.setLimits(2, 10, 1)
+					.setValue(this.plugin.settings.speakerCount)
+					.setDynamicTooltip()
+					.onChange(async (value) => {
+						this.plugin.settings.speakerCount = value;
+						await this.plugin.saveSettings();
+					}));
+		}
 
 		// ========================================
 		// ANALYSIS SETTINGS

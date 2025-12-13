@@ -387,6 +387,16 @@ tags: [meeting, transcription]
 
 `;
 
+		// Add speaker renaming instructions if diarization is enabled
+		const speakerInstructions = this.plugin.settings.enableDiarization ? `
+> **👥 Speaker Labels**
+> To rename speakers, use Find & Replace:
+> - Find: \`**Speaker 1:**\` → Replace with: \`**Alice:**\`
+> - Find: \`**Speaker 2:**\` → Replace with: \`**Bob:**\`
+> - And so on for other speakers...
+
+` : '';
+
 		// Table of contents for longer transcripts
 		const hasTOC = transcription.duration > 600; // 10+ minutes
 		const toc = hasTOC ? `## Table of Contents
@@ -435,7 +445,7 @@ ${analysis.followUps.map((q: string) => `- ${q}`).join('\n')}
 
 *Generated with Obsidian Audio Transcription Plugin*`;
 
-		return frontmatter + header + toc + summarySection + keyPointsSection + actionItemsSection + followUpSection + transcriptionSection + footer;
+		return frontmatter + header + speakerInstructions + toc + summarySection + keyPointsSection + actionItemsSection + followUpSection + transcriptionSection + footer;
 	}
 
 	private formatTranscriptionSection(transcription: TranscriptionResult): string {

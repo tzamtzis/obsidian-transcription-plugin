@@ -46,11 +46,22 @@
 
 ### 4. Speaker Diarization (Nice-to-Have)
 
-- [ ] Research diarization options compatible with whisper.cpp
-- [ ] Implement pyannote-audio integration (if feasible)
-- [ ] Add speaker count setting
-- [ ] Update transcript format to include speaker labels
-- [ ] Add speaker renaming UI in generated markdown
+- [x] Research diarization options compatible with whisper.cpp
+  - Documented cloud options: AssemblyAI, Deepgram, Rev.ai
+  - Documented local options: WhisperX, pyannote-audio
+  - Created comprehensive DiarizationService with implementation roadmap
+- [ ] Implement automatic diarization (future feature)
+  - Cloud: AssemblyAI or Deepgram integration
+  - Local: WhisperX or pyannote-audio integration
+- [x] Add speaker count setting
+  - Added slider (2-10 speakers) in settings UI
+  - Shows when diarization toggle is enabled
+- [x] Update transcript format to include speaker labels
+  - Already supported in TranscriptSegment interface
+  - Displays as "**Speaker N:**" in transcripts
+- [x] Add speaker renaming UI in generated markdown
+  - Added instructions in generated files
+  - Users can use Find & Replace to rename speakers
 
 ### 5. Error Handling Improvements
 
