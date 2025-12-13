@@ -4,6 +4,12 @@
 
 ### 1. Testing with Real Audio Files
 
+**Testing Infrastructure Created** ✅
+- [x] Created comprehensive test plan (TESTING.md)
+- [x] Created test utilities (test-utils.js)
+- [x] Created test checklist (TEST-CHECKLIST.md)
+
+**Manual Testing Required** (requires audio files and running plugin)
 - [ ] Test with m4a files (various codecs)
 - [ ] Test with mp3 files (various bitrates)
 - [ ] Test with WAV files (verify 16kHz conversion skipping)
@@ -14,6 +20,12 @@
 - [ ] Test cloud transcription (OpenAI Whisper API)
 - [ ] Test cloud analysis (OpenRouter)
 - [ ] Test error scenarios (corrupted files, network failures, etc.)
+
+**How to Test**:
+1. Review TESTING.md for detailed test plan
+2. Use TEST-CHECKLIST.md to track progress
+3. Run `node test-utils.js help` for utility commands
+4. Document results and issues
 
 ### 2. Platform Support
 
@@ -28,7 +40,7 @@
 - [ ] Test on macOS
 - [ ] Test on Linux
 
-### 3. Output Formatting Improvements
+### 3. ~~Output Formatting Improvements~~
 
 - [x] Implement timestamp inclusion setting
   - Add timestamps to each segment when enabled
@@ -63,7 +75,7 @@
   - Added instructions in generated files
   - Users can use Find & Replace to rename speakers
 
-### 5. Error Handling Improvements
+### 5. ~~Error Handling Improvements~~
 
 - [x] Add validation for API keys before making requests
 - [x] Improve error messages for common failures
@@ -76,7 +88,7 @@
 - [x] Implement request cancellation for cloud APIs (structure in place)
 - [x] Add file size validation (warn for files > 100MB)
 
-### 6. UI/UX Enhancements
+### 6. ~~UI/UX Enhancements~~
 
 - [x] Add progress modal during transcription
   - Show current step (transcribing/analyzing/saving)
