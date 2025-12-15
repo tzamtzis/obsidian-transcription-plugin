@@ -466,18 +466,24 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		containerEl.createEl('p', { text: 'Installed models:' });
 
 		const list = containerEl.createEl('ul');
+		list.style.listStyle = 'none';
+		list.style.paddingLeft = '1em';
 
 		for (const model of models) {
 			const item = list.createEl('li');
+			item.style.marginBottom = '0.5em';
+			item.style.fontFamily = 'var(--font-monospace)';
 			const exists = await this.plugin.modelManager.checkModelExists(model);
 			const selected = model === this.plugin.settings.modelSize;
 
-			const prefix = selected ? '� ' : '� ';
-			const status = exists ? ` Installed (${modelSizes[model]})` : 'Not downloaded';
-			item.textContent = `${prefix}${model}.bin - ${status}`;
+			const prefix = selected ? '> ' : '  ';
+			const statusIcon = exists ? '[OK]' : '[  ]';
+			const statusText = exists ? `Installed (${modelSizes[model]})` : 'Not downloaded';
+			item.textContent = `${prefix}${statusIcon} ${model}.bin - ${statusText}`;
 
 			if (selected) {
 				item.style.fontWeight = 'bold';
+				item.style.color = 'var(--interactive-accent)';
 			}
 		}
 	}

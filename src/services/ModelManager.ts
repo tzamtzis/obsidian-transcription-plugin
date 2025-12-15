@@ -218,14 +218,25 @@ export class ModelManager {
 					// Pipe to file
 					response.pipe(fileStream);
 
+					// Wait for both 'finish' and 'close' events
 					fileStream.on('finish', () => {
 						fileStream.close();
+					});
+
+					fileStream.on('close', () => {
+						// Only resolve after file is fully closed
 						resolve();
 					});
 
 					fileStream.on('error', (error) => {
 						fileStream.close();
-						fs.unlinkSync(destPath);
+						if (fs.existsSync(destPath)) {
+							try {
+								fs.unlinkSync(destPath);
+							} catch (e) {
+								console.error('Failed to delete temp file:', e);
+							}
+						}
 						reject(error);
 					});
 

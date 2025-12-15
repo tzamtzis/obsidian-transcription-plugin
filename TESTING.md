@@ -25,6 +25,12 @@ This document provides a comprehensive testing plan for the Obsidian Audio Trans
 
 ### For Local Processing
 
+**Windows Users - Important:**
+- Install Visual C++ Redistributable first: https://aka.ms/vs/17/release/vc_redist.x64.exe
+- Required for whisper.cpp to run (prevents error 3221225781)
+- Restart Obsidian after installation
+
+**All Platforms:**
 1. Download Whisper.cpp binary (via plugin settings)
 2. Download at least one model (recommend: medium for Greek/English)
 3. Verify binary and model status in Settings → System Status

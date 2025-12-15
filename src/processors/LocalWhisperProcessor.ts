@@ -286,6 +286,18 @@ export class LocalWhisperProcessor {
 				this.currentProcess = null;
 
 				if (code !== 0) {
+					// Check for Windows DLL missing error (0xC0000135 = 3221225781)
+					if (code === 3221225781 || code === -1073741515) {
+						reject(new Error(
+							'Whisper.cpp failed to start: Missing required DLL files.\n\n' +
+							'Solution:\n' +
+							'1. Install Microsoft Visual C++ Redistributable:\n' +
+							'   https://aka.ms/vs/17/release/vc_redist.x64.exe\n' +
+							'2. Restart Obsidian after installation\n\n' +
+							'Alternative: Try downloading a different whisper.cpp build or use cloud processing.'
+						));
+						return;
+					}
 					reject(new Error(`Whisper process exited with code ${code}: ${stderr}`));
 					return;
 				}
