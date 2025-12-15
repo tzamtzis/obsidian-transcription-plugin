@@ -430,6 +430,7 @@ If something goes wrong during transcription:
 ### Option 1: Local Processing (Recommended for Privacy)
 
 **Advantages:**
+
 - Complete privacy - audio never leaves your device
 - No ongoing costs
 - Works offline
@@ -451,6 +452,7 @@ If something goes wrong during transcription:
 ### Option 2: Cloud Processing with OpenAI Whisper
 
 **Advantages:**
+
 - Faster processing
 - No large downloads required
 - Works on any device
@@ -469,6 +471,7 @@ If something goes wrong during transcription:
 ### Option 3: Cloud Processing with OpenRouter
 
 **Advantages:**
+
 - Access to multiple AI models
 - Often cheaper than OpenAI
 - Flexible model selection

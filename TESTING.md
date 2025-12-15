@@ -41,7 +41,7 @@ This document provides a comprehensive testing plan for the Obsidian Audio Trans
 
 ### Recommended Test Vault Structure
 
-```
+```text
 test-vault/
 ├── audio-samples/
 │   ├── m4a/
