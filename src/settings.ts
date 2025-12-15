@@ -54,7 +54,7 @@ export const DEFAULT_SETTINGS: AudioTranscriptionSettings = {
 	openaiApiKey: '',
 	openrouterApiKey: '',
 	openrouterModelName: 'meta-llama/llama-3.2-3b-instruct',
-	outputFolder: 'Transcriptions',
+	outputFolder: '',
 	includeTimestamps: true,
 	autoCreateTags: true,
 	skipIfAnalyzed: true,
