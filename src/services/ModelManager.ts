@@ -137,15 +137,39 @@ export class ModelManager {
 				}, (req, stream) => {
 					request = req;
 					writeStream = stream;
-				}).then(() => {
+				}).then(async () => {
 					if (downloadCancelled) {
 						reject(new Error('Download cancelled by user'));
 						return;
 					}
 
-					// Move temp file to final location
-					if (fs.existsSync(tempPath)) {
-						fs.renameSync(tempPath, modelPath);
+					modal.setStatus('Finalizing download...');
+
+					// Wait a moment for file system to release locks (especially on Windows)
+					// This prevents EPERM/EBUSY errors when renaming
+					await new Promise(resolve => setTimeout(resolve, 500));
+
+					// Move temp file to final location with retry logic
+					let retries = 3;
+					while (retries > 0) {
+						try {
+							if (fs.existsSync(tempPath)) {
+								// Check if destination file exists and remove it
+								if (fs.existsSync(modelPath)) {
+									fs.unlinkSync(modelPath);
+								}
+								fs.renameSync(tempPath, modelPath);
+							}
+							break; // Success!
+						} catch (error) {
+							retries--;
+							if (retries === 0) {
+								// Final attempt failed
+								throw new Error(`Failed to finalize download: ${error.message}`);
+							}
+							// Wait before retry
+							await new Promise(resolve => setTimeout(resolve, 1000));
+						}
 					}
 
 					modal.setComplete();
