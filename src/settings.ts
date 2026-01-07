@@ -282,8 +282,20 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 						try {
 							await this.plugin.modelManager.downloadModel(this.plugin.settings.modelSize);
 							this.display(); // Refresh to update status
+							new Notice(`Successfully downloaded ${this.plugin.settings.modelSize} model!`);
 						} catch (error) {
 							console.error('Failed to download model:', error);
+							const errorMessage = error.message || 'Unknown error occurred';
+							new Notice(`Failed to download model: ${errorMessage}`, 8000);
+
+							// Show helpful tips based on error type
+							if (errorMessage.includes('timeout') || errorMessage.includes('stalled')) {
+								new Notice('Tip: Check your internet connection and try again', 6000);
+							} else if (errorMessage.includes('ENOSPC')) {
+								new Notice('Error: Not enough disk space. Please free up space and try again', 8000);
+							} else if (errorMessage.includes('EACCES')) {
+								new Notice('Error: Permission denied. Check folder permissions', 8000);
+							}
 						} finally {
 							button.setDisabled(false);
 							button.setButtonText('Download Model');

@@ -17,6 +17,7 @@ export interface ModelInfo {
 export class ModelManager {
 	private plugin: AudioTranscriptionPlugin;
 	private modelsDir: string;
+	private downloadsInProgress: Set<ModelSize> = new Set();
 	private modelUrls: Record<ModelSize, string> = {
 		tiny: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin',
 		base: 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin',
@@ -49,34 +50,47 @@ export class ModelManager {
 		onProgress?: (downloaded: number, total: number) => void,
 		maxRetries: number = 2
 	): Promise<void> {
-		let lastError: Error | null = null;
-
-		// Try downloading with retries
-		for (let attempt = 0; attempt < maxRetries; attempt++) {
-			try {
-				if (attempt > 0) {
-					new Notice(`Retrying download (attempt ${attempt + 1}/${maxRetries})...`);
-				}
-				await this.downloadModelAttempt(modelSize, onProgress);
-				return; // Success!
-			} catch (error) {
-				lastError = error;
-				console.error(`Download attempt ${attempt + 1} failed:`, error);
-
-				// If it's a user cancellation, don't retry
-				if (error.message && error.message.includes('cancelled')) {
-					throw error;
-				}
-
-				// Wait a bit before retrying
-				if (attempt < maxRetries - 1) {
-					await new Promise(resolve => setTimeout(resolve, 2000));
-				}
-			}
+		// Check if download is already in progress
+		if (this.downloadsInProgress.has(modelSize)) {
+			throw new Error(`Download of ${modelSize} model is already in progress`);
 		}
 
-		// All attempts failed
-		throw lastError || new Error('Download failed after multiple attempts');
+		// Mark download as in progress
+		this.downloadsInProgress.add(modelSize);
+
+		try {
+			let lastError: Error | null = null;
+
+			// Try downloading with retries
+			for (let attempt = 0; attempt < maxRetries; attempt++) {
+				try {
+					if (attempt > 0) {
+						new Notice(`Retrying download (attempt ${attempt + 1}/${maxRetries})...`);
+					}
+					await this.downloadModelAttempt(modelSize, onProgress);
+					return; // Success!
+				} catch (error) {
+					lastError = error;
+					console.error(`Download attempt ${attempt + 1} failed:`, error);
+
+					// If it's a user cancellation, don't retry
+					if (error.message && error.message.includes('cancelled')) {
+						throw error;
+					}
+
+					// Wait a bit before retrying
+					if (attempt < maxRetries - 1) {
+						await new Promise(resolve => setTimeout(resolve, 2000));
+					}
+				}
+			}
+
+			// All attempts failed
+			throw lastError || new Error('Download failed after multiple attempts');
+		} finally {
+			// Always remove from in-progress set when done
+			this.downloadsInProgress.delete(modelSize);
+		}
 	}
 
 	private async downloadModelAttempt(
@@ -202,6 +216,9 @@ export class ModelManager {
 					const totalSize = parseInt(response.headers['content-length'] || '0', 10);
 					let downloadedSize = 0;
 
+					// Clear connection timeout - we've connected successfully
+					clearTimeout(connectionTimeout);
+
 					// Create write stream
 					const fileStream = fs.createWriteStream(destPath);
 
@@ -209,10 +226,15 @@ export class ModelManager {
 						onStreamCreated(request, fileStream);
 					}
 
+					// Start inactivity monitoring
+					resetInactivityTimeout();
+
 					// Track progress
 					response.on('data', (chunk: Buffer) => {
 						downloadedSize += chunk.length;
 						onProgress(downloadedSize, totalSize);
+						// Reset inactivity timeout - we're receiving data
+						resetInactivityTimeout();
 					});
 
 					// Pipe to file
@@ -224,11 +246,21 @@ export class ModelManager {
 					});
 
 					fileStream.on('close', () => {
+						// Clean up timeouts
+						clearTimeout(connectionTimeout);
+						if (inactivityTimeout) {
+							clearTimeout(inactivityTimeout);
+						}
 						// Only resolve after file is fully closed
 						resolve();
 					});
 
 					fileStream.on('error', (error) => {
+						// Clean up timeouts
+						clearTimeout(connectionTimeout);
+						if (inactivityTimeout) {
+							clearTimeout(inactivityTimeout);
+						}
 						fileStream.close();
 						if (fs.existsSync(destPath)) {
 							try {
@@ -241,20 +273,47 @@ export class ModelManager {
 					});
 
 					response.on('error', (error) => {
+						// Clean up timeouts
+						clearTimeout(connectionTimeout);
+						if (inactivityTimeout) {
+							clearTimeout(inactivityTimeout);
+						}
 						fileStream.close();
-						fs.unlinkSync(destPath);
+						if (fs.existsSync(destPath)) {
+							fs.unlinkSync(destPath);
+						}
 						reject(error);
 					});
 				});
 
 				request.on('error', (error) => {
+					// Clean up timeouts
+					clearTimeout(connectionTimeout);
+					if (inactivityTimeout) {
+						clearTimeout(inactivityTimeout);
+					}
 					reject(error);
 				});
 
-				request.setTimeout(30000, () => {
+				// Set initial connection timeout (30 seconds to establish connection)
+				// This will be cleared once we start receiving data
+				let connectionTimeout = setTimeout(() => {
 					request.destroy();
-					reject(new Error('Download timeout'));
-				});
+					reject(new Error('Connection timeout - unable to reach server'));
+				}, 30000);
+
+				// Set inactivity timeout (resets every time we receive data)
+				let inactivityTimeout: NodeJS.Timeout | null = null;
+				const resetInactivityTimeout = () => {
+					if (inactivityTimeout) {
+						clearTimeout(inactivityTimeout);
+					}
+					// If no data received for 60 seconds, consider it stalled
+					inactivityTimeout = setTimeout(() => {
+						request.destroy();
+						reject(new Error('Download stalled - no data received for 60 seconds'));
+					}, 60000);
+				};
 			};
 
 			download(url, 0);
