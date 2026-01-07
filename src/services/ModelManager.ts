@@ -124,8 +124,26 @@ export class ModelManager {
 			}
 		});
 
-		return new Promise((resolve, reject) => {
+		return new Promise(async (resolve, reject) => {
 			try {
+				modal.setStatus('Testing connection to server...');
+
+				// Test connection first
+				const canConnect = await this.testConnection(url);
+				if (!canConnect) {
+					const errorMsg = 'Cannot reach Hugging Face servers. This could be due to:\n' +
+						'• Firewall or antivirus blocking the connection\n' +
+						'• Network proxy requiring configuration\n' +
+						'• Network connection issues\n\n' +
+						'You can try:\n' +
+						'1. Temporarily disable your antivirus/firewall\n' +
+						'2. Check if you need to configure a proxy\n' +
+						'3. Download the model manually from huggingface.co';
+					console.error(errorMsg);
+					reject(new Error('Cannot reach Hugging Face servers. Check firewall/proxy settings or download manually.'));
+					return;
+				}
+
 				modal.setStatus('Connecting to server...');
 
 				// Follow redirects and download
@@ -201,19 +219,40 @@ export class ModelManager {
 
 					// Show user-friendly error message
 					let errorMessage = 'Download failed';
-					if (error.message.includes('timeout') || error.message.includes('stalled')) {
+					let showManualInstructions = false;
+
+					if (error.message.includes('Cannot reach Hugging Face')) {
+						errorMessage = error.message;
+						showManualInstructions = true;
+					} else if (error.message.includes('timeout') || error.message.includes('stalled')) {
 						errorMessage = 'Download timed out - connection too slow or unstable';
+						showManualInstructions = true;
 					} else if (errorCode === 'ENOSPC') {
 						errorMessage = 'Not enough disk space';
 					} else if (errorCode === 'EACCES' || errorCode === 'EPERM') {
 						errorMessage = 'Permission denied - check antivirus or folder permissions';
-					} else if (errorCode === 'ECONNRESET' || errorCode === 'ETIMEDOUT') {
-						errorMessage = 'Network connection interrupted';
+					} else if (errorCode === 'ECONNRESET' || errorCode === 'ETIMEDOUT' || errorCode === 'ENOTFOUND') {
+						errorMessage = 'Network connection issue - check firewall/proxy settings';
+						showManualInstructions = true;
 					} else if (error.message) {
 						errorMessage = error.message;
 					}
 
 					modal.setError(errorMessage);
+
+					// Show manual download instructions if network-related
+					if (showManualInstructions) {
+						console.log('\n═══════════════════════════════════════════════════════════');
+						console.log('MANUAL DOWNLOAD INSTRUCTIONS:');
+						console.log('═══════════════════════════════════════════════════════════');
+						console.log(`1. Open in browser: ${this.modelUrls[modelSize]}`);
+						console.log(`2. Save the file as: ggml-${modelSize}.bin`);
+						console.log(`3. Copy the file to: ${this.modelsDir}`);
+						console.log('4. Restart Obsidian');
+						console.log('═══════════════════════════════════════════════════════════\n');
+
+						new Notice('Download failed. See console (Ctrl+Shift+I) for manual download instructions.', 10000);
+					}
 
 					// Clean up temp file
 					if (fs.existsSync(tempPath)) {
@@ -226,6 +265,35 @@ export class ModelManager {
 				modal.setError(error.message || 'Failed to start download');
 				reject(error);
 			}
+		});
+	}
+
+	private async testConnection(url: string): Promise<boolean> {
+		return new Promise((resolve) => {
+			const urlObj = new URL(url);
+			const request = https.get({
+				hostname: urlObj.hostname,
+				path: '/',
+				timeout: 10000
+			}, (response) => {
+				response.destroy();
+				resolve(true);
+			});
+
+			request.on('error', (error) => {
+				console.error('Connection test failed:', {
+					hostname: urlObj.hostname,
+					error: error.message,
+					code: (error as any).code
+				});
+				resolve(false);
+			});
+
+			request.on('timeout', () => {
+				request.destroy();
+				console.error('Connection test timeout:', urlObj.hostname);
+				resolve(false);
+			});
 		});
 	}
 
