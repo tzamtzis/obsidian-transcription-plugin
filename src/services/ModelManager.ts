@@ -188,8 +188,32 @@ export class ModelManager {
 						return;
 					}
 
-					console.error('Failed to download model:', error);
-					modal.setError(error.message || 'Download failed');
+					// Log detailed error information
+					const errorCode = (error as any).code;
+					console.error('Failed to download model:', {
+						error: error,
+						message: error.message,
+						code: errorCode,
+						errno: (error as any).errno,
+						syscall: (error as any).syscall,
+						stack: error.stack
+					});
+
+					// Show user-friendly error message
+					let errorMessage = 'Download failed';
+					if (error.message.includes('timeout') || error.message.includes('stalled')) {
+						errorMessage = 'Download timed out - connection too slow or unstable';
+					} else if (errorCode === 'ENOSPC') {
+						errorMessage = 'Not enough disk space';
+					} else if (errorCode === 'EACCES' || errorCode === 'EPERM') {
+						errorMessage = 'Permission denied - check antivirus or folder permissions';
+					} else if (errorCode === 'ECONNRESET' || errorCode === 'ETIMEDOUT') {
+						errorMessage = 'Network connection interrupted';
+					} else if (error.message) {
+						errorMessage = error.message;
+					}
+
+					modal.setError(errorMessage);
 
 					// Clean up temp file
 					if (fs.existsSync(tempPath)) {
@@ -280,6 +304,12 @@ export class ModelManager {
 					});
 
 					fileStream.on('error', (error) => {
+						console.error('File stream error during download:', {
+							error: error.message,
+							code: (error as any).code,
+							downloadedSize,
+							totalSize
+						});
 						// Clean up timeouts
 						clearTimeout(connectionTimeout);
 						if (inactivityTimeout) {
@@ -297,6 +327,12 @@ export class ModelManager {
 					});
 
 					response.on('error', (error) => {
+						console.error('Response stream error during download:', {
+							error: error.message,
+							code: (error as any).code,
+							downloadedSize,
+							totalSize
+						});
 						// Clean up timeouts
 						clearTimeout(connectionTimeout);
 						if (inactivityTimeout) {
@@ -311,6 +347,11 @@ export class ModelManager {
 				});
 
 				request.on('error', (error) => {
+					console.error('Request error during download:', {
+						error: error.message,
+						code: (error as any).code,
+						url: currentUrl
+					});
 					// Clean up timeouts
 					clearTimeout(connectionTimeout);
 					if (inactivityTimeout) {
@@ -322,21 +363,27 @@ export class ModelManager {
 				// Set initial connection timeout (30 seconds to establish connection)
 				// This will be cleared once we start receiving data
 				let connectionTimeout = setTimeout(() => {
+					console.error('Connection timeout triggered - no response from server');
 					request.destroy();
 					reject(new Error('Connection timeout - unable to reach server'));
 				}, 30000);
 
 				// Set inactivity timeout (resets every time we receive data)
+				// Increased to 120 seconds to handle slow connections better
 				let inactivityTimeout: NodeJS.Timeout | null = null;
+				let lastProgressTime = Date.now();
 				const resetInactivityTimeout = () => {
 					if (inactivityTimeout) {
 						clearTimeout(inactivityTimeout);
 					}
-					// If no data received for 60 seconds, consider it stalled
+					lastProgressTime = Date.now();
+					// If no data received for 120 seconds, consider it stalled
 					inactivityTimeout = setTimeout(() => {
+						const stalledDuration = Math.round((Date.now() - lastProgressTime) / 1000);
+						console.error(`Download stalled - no data received for ${stalledDuration} seconds`);
 						request.destroy();
-						reject(new Error('Download stalled - no data received for 60 seconds'));
-					}, 60000);
+						reject(new Error(`Download stalled - no data received for ${stalledDuration} seconds`));
+					}, 120000);
 				};
 			};
 
