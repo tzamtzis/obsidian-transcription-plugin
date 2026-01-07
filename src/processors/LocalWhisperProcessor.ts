@@ -374,44 +374,76 @@ export class LocalWhisperProcessor {
 
 	// Download whisper.cpp binary for Windows
 	async downloadBinary(onProgress?: (progress: number) => void): Promise<void> {
-		// URL for whisper.cpp Windows binary
-		const binaryUrl = 'https://github.com/ggerganov/whisper.cpp/releases/download/v1.5.4/whisper-bin-x64.zip';
+		// List of URLs to try (in order of preference)
+		// v1.5.5 is the most stable with confirmed Windows binaries
+		const binaryUrls = [
+			'https://github.com/ggerganov/whisper.cpp/releases/download/v1.5.5/whisper-bin-x64.zip',
+			'https://github.com/ggerganov/whisper.cpp/releases/download/v1.5.4/whisper-bin-x64.zip',
+			'https://github.com/ggerganov/whisper.cpp/releases/download/v1.6.0/whisper-bin-x64.zip',
+		];
+
 		const binDir = path.dirname(this.whisperBinaryPath);
 		const tempZipPath = path.join(binDir, 'whisper-temp.zip');
 
-		try {
-			// Ensure bin directory exists
-			if (!fs.existsSync(binDir)) {
-				fs.mkdirSync(binDir, { recursive: true });
-			}
+		let lastError: Error | null = null;
 
-			// Download the zip file
-			if (onProgress) onProgress(10);
-			await this.downloadFile(binaryUrl, tempZipPath, (downloaded, total) => {
-				if (onProgress && total > 0) {
-					const downloadProgress = Math.floor((downloaded / total) * 70); // 10-80%
-					onProgress(10 + downloadProgress);
+		// Try each URL until one works
+		for (let i = 0; i < binaryUrls.length; i++) {
+			const binaryUrl = binaryUrls[i];
+			console.log(`Attempting download from: ${binaryUrl}`);
+
+			try {
+				// Ensure bin directory exists
+				if (!fs.existsSync(binDir)) {
+					fs.mkdirSync(binDir, { recursive: true });
 				}
-			});
 
-			// Extract whisper.exe from the zip
-			if (onProgress) onProgress(80);
-			await this.extractWhisperBinary(tempZipPath, binDir);
+				// Download the zip file
+				if (onProgress) onProgress(10);
+				await this.downloadFile(binaryUrl, tempZipPath, (downloaded, total) => {
+					if (onProgress && total > 0) {
+						const downloadProgress = Math.floor((downloaded / total) * 70); // 10-80%
+						onProgress(10 + downloadProgress);
+					}
+				});
 
-			// Clean up temp zip file
-			if (fs.existsSync(tempZipPath)) {
-				fs.unlinkSync(tempZipPath);
+				// Extract whisper.exe and all DLLs from the zip
+				if (onProgress) onProgress(80);
+				await this.extractWhisperBinary(tempZipPath, binDir);
+
+				// Clean up temp zip file
+				if (fs.existsSync(tempZipPath)) {
+					fs.unlinkSync(tempZipPath);
+				}
+
+				if (onProgress) onProgress(100);
+
+				// Success!
+				console.log(`Successfully downloaded from: ${binaryUrl}`);
+				return;
+
+			} catch (error) {
+				console.error(`Failed to download from ${binaryUrl}:`, error);
+				lastError = error as Error;
+
+				// Clean up on error
+				if (fs.existsSync(tempZipPath)) {
+					fs.unlinkSync(tempZipPath);
+				}
+
+				// Continue to next URL
+				continue;
 			}
-
-			if (onProgress) onProgress(100);
-
-		} catch (error) {
-			// Clean up on error
-			if (fs.existsSync(tempZipPath)) {
-				fs.unlinkSync(tempZipPath);
-			}
-			throw error;
 		}
+
+		// All downloads failed
+		throw new Error(
+			`Failed to download whisper.cpp binary from all sources.\n\n` +
+			`Last error: ${lastError?.message}\n\n` +
+			`You can manually download from:\n` +
+			`https://github.com/ggerganov/whisper.cpp/releases\n\n` +
+			`Extract whisper.exe and all .dll files to:\n${binDir}`
+		);
 	}
 
 	private async downloadFile(
@@ -488,6 +520,8 @@ export class LocalWhisperProcessor {
 				const zip = new AdmZip(zipPath);
 				const zipEntries = zip.getEntries();
 
+				console.log('Zip contents:', zipEntries.map(e => e.entryName));
+
 				// Find whisper.exe or main.exe in the zip
 				let whisperEntry = zipEntries.find(entry =>
 					entry.entryName.endsWith('whisper.exe') ||
@@ -500,20 +534,52 @@ export class LocalWhisperProcessor {
 				}
 
 				if (!whisperEntry) {
-					reject(new Error('Whisper executable not found in zip file'));
+					const entryNames = zipEntries.map(e => e.entryName).join(', ');
+					reject(new Error(`Whisper executable not found in zip file. Contents: ${entryNames}`));
 					return;
 				}
 
-				// Extract the binary
-				zip.extractEntryTo(whisperEntry, destDir, false, true);
+				// Extract ALL files (exe and dlls) from the same directory as the whisper.exe
+				const whisperDir = path.dirname(whisperEntry.entryName);
 
-				// Rename to whisper.exe if it has a different name
+				zipEntries.forEach(entry => {
+					// Extract files from the same directory as whisper.exe
+					// This includes the .exe and all .dll files
+					if (path.dirname(entry.entryName) === whisperDir && !entry.isDirectory) {
+						console.log('Extracting:', entry.entryName);
+						zip.extractEntryTo(entry, destDir, false, true);
+					}
+				});
+
+				// Rename the main executable to whisper.exe if it has a different name
 				const extractedPath = path.join(destDir, path.basename(whisperEntry.entryName));
 				if (extractedPath !== this.whisperBinaryPath) {
 					if (fs.existsSync(this.whisperBinaryPath)) {
 						fs.unlinkSync(this.whisperBinaryPath);
 					}
 					fs.renameSync(extractedPath, this.whisperBinaryPath);
+				}
+
+				// Verify the extracted file exists and has reasonable size
+				if (!fs.existsSync(this.whisperBinaryPath)) {
+					reject(new Error('Extraction completed but whisper.exe not found'));
+					return;
+				}
+
+				const stats = fs.statSync(this.whisperBinaryPath);
+				console.log(`Whisper.exe extracted: ${stats.size} bytes`);
+
+				// Check for whisper.dll in the same directory (the actual library code)
+				const dllPath = path.join(destDir, 'whisper.dll');
+				if (fs.existsSync(dllPath)) {
+					const dllStats = fs.statSync(dllPath);
+					console.log(`whisper.dll found: ${dllStats.size} bytes`);
+				}
+
+				// Size check: exe can be small (100KB+) when logic is in DLL
+				if (stats.size < 50000) { // Less than 50KB is definitely wrong
+					reject(new Error(`Whisper.exe seems too small (${stats.size} bytes). Expected > 50KB. Download may be corrupted.`));
+					return;
 				}
 
 				resolve();
