@@ -1,5 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import AudioTranscriptionPlugin from './main';
+import { ManualDownloadInstructionsModal } from './ui/TranscriptionModal';
 import * as os from 'os';
 
 export type ModelSize = 'tiny' | 'base' | 'small' | 'medium' | 'large';
@@ -286,15 +287,35 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 						} catch (error) {
 							console.error('Failed to download model:', error);
 							const errorMessage = error.message || 'Unknown error occurred';
-							new Notice(`Failed to download model: ${errorMessage}`, 8000);
 
-							// Show helpful tips based on error type
-							if (errorMessage.includes('timeout') || errorMessage.includes('stalled')) {
-								new Notice('Tip: Check your internet connection and try again', 6000);
-							} else if (errorMessage.includes('ENOSPC')) {
-								new Notice('Error: Not enough disk space. Please free up space and try again', 8000);
-							} else if (errorMessage.includes('EACCES')) {
-								new Notice('Error: Permission denied. Check folder permissions', 8000);
+							// Show manual download instructions modal for network-related errors
+							const isNetworkError =
+								errorMessage.includes('timeout') ||
+								errorMessage.includes('stalled') ||
+								errorMessage.includes('Cannot reach') ||
+								errorMessage.includes('Network connection') ||
+								errorMessage.includes('Connection timeout');
+
+							if (isNetworkError) {
+								// Show detailed manual download instructions in a modal
+								const modelUrl = this.plugin.modelManager.getModelUrl(this.plugin.settings.modelSize);
+								const modelsDir = this.plugin.modelManager.getModelsDir();
+								const modal = new ManualDownloadInstructionsModal(
+									this.app,
+									this.plugin.settings.modelSize,
+									modelUrl,
+									modelsDir
+								);
+								modal.open();
+							} else {
+								// Show standard error notice for non-network errors
+								new Notice(`Failed to download model: ${errorMessage}`, 8000);
+
+								if (errorMessage.includes('ENOSPC')) {
+									new Notice('Error: Not enough disk space. Please free up space and try again', 8000);
+								} else if (errorMessage.includes('EACCES')) {
+									new Notice('Error: Permission denied. Check folder permissions', 8000);
+								}
 							}
 						} finally {
 							button.setDisabled(false);

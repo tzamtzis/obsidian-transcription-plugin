@@ -463,6 +463,14 @@ export class ModelManager {
 		return path.join(this.modelsDir, `ggml-${modelSize}.bin`);
 	}
 
+	getModelUrl(modelSize: ModelSize): string {
+		return this.modelUrls[modelSize];
+	}
+
+	getModelsDir(): string {
+		return this.modelsDir;
+	}
+
 	async validateModel(modelSize: ModelSize): Promise<boolean> {
 		const modelPath = this.getModelPath(modelSize);
 

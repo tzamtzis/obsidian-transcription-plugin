@@ -1,4 +1,222 @@
-import { Modal, App, ButtonComponent } from 'obsidian';
+import { Modal, App, ButtonComponent, Notice } from 'obsidian';
+import { ModelSize } from '../settings';
+
+export class ManualDownloadInstructionsModal extends Modal {
+	constructor(app: App, private modelSize: ModelSize, private modelUrl: string, private modelsDir: string) {
+		super(app);
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.addClass('manual-download-modal');
+
+		// Title
+		contentEl.createEl('h2', { text: '⚠️ Automatic Download Failed' });
+
+		// Error explanation
+		const errorSection = contentEl.createDiv({ cls: 'download-error-section' });
+		errorSection.createEl('h3', { text: 'What went wrong?' });
+		errorSection.createEl('p', {
+			text: 'Both download attempts failed. This is usually caused by:',
+			cls: 'error-intro'
+		});
+
+		const causesList = errorSection.createEl('ul', { cls: 'causes-list' });
+		causesList.createEl('li', { text: '🛡️ Antivirus or firewall blocking the connection to Hugging Face' });
+		causesList.createEl('li', { text: '🌐 Network proxy or corporate firewall restrictions' });
+		causesList.createEl('li', { text: '📶 Slow or unstable internet connection' });
+		causesList.createEl('li', { text: '🔒 Windows Defender blocking downloads' });
+
+		// Manual instructions
+		const instructionsSection = contentEl.createDiv({ cls: 'download-instructions-section' });
+		instructionsSection.createEl('h3', { text: '📥 Manual Download Instructions' });
+
+		const steps = instructionsSection.createEl('ol', { cls: 'instruction-steps' });
+
+		// Step 1
+		const step1 = steps.createEl('li');
+		step1.createEl('strong', { text: 'Download the file:' });
+		step1.createEl('br');
+		const urlLink = step1.createEl('a', {
+			text: this.modelUrl,
+			href: this.modelUrl,
+			cls: 'download-link'
+		});
+		urlLink.setAttr('target', '_blank');
+		const copyUrlBtn = step1.createEl('button', { text: '📋 Copy URL', cls: 'copy-button' });
+		copyUrlBtn.onclick = () => {
+			navigator.clipboard.writeText(this.modelUrl);
+			new Notice('URL copied to clipboard!');
+		};
+
+		// Step 2
+		const step2 = steps.createEl('li');
+		step2.createEl('strong', { text: 'Save the file as:' });
+		step2.createEl('br');
+		const fileName = step2.createEl('code', { text: `ggml-${this.modelSize}.bin`, cls: 'filename' });
+		const copyFileBtn = step2.createEl('button', { text: '📋 Copy', cls: 'copy-button' });
+		copyFileBtn.onclick = () => {
+			navigator.clipboard.writeText(`ggml-${this.modelSize}.bin`);
+			new Notice('Filename copied to clipboard!');
+		};
+
+		// Step 3
+		const step3 = steps.createEl('li');
+		step3.createEl('strong', { text: 'Copy the file to this folder:' });
+		step3.createEl('br');
+		const pathCode = step3.createEl('code', { text: this.modelsDir, cls: 'filepath' });
+		const copyPathBtn = step3.createEl('button', { text: '📋 Copy Path', cls: 'copy-button' });
+		copyPathBtn.onclick = () => {
+			navigator.clipboard.writeText(this.modelsDir);
+			new Notice('Path copied to clipboard!');
+		};
+		step3.createEl('br');
+		const openFolderBtn = step3.createEl('button', { text: '📁 Open Folder', cls: 'open-folder-button' });
+		openFolderBtn.onclick = () => {
+			window.require('electron').shell.openPath(this.modelsDir);
+		};
+
+		// Step 4
+		const step4 = steps.createEl('li');
+		step4.createEl('strong', { text: 'Restart Obsidian' });
+		step4.createEl('br');
+		step4.createEl('span', { text: 'The model will be detected automatically after restart.' });
+
+		// Troubleshooting section
+		const troubleshootSection = contentEl.createDiv({ cls: 'troubleshooting-section' });
+		troubleshootSection.createEl('h3', { text: '🔧 If download still fails in browser:' });
+		const troubleshootList = troubleshootSection.createEl('ul');
+		troubleshootList.createEl('li', { text: 'Temporarily disable your antivirus/firewall' });
+		troubleshootList.createEl('li', { text: 'Try downloading from a different network (mobile hotspot)' });
+		troubleshootList.createEl('li', { text: 'Use a VPN if Hugging Face is blocked in your region' });
+
+		// Close button
+		const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+		new ButtonComponent(buttonContainer)
+			.setButtonText('Close')
+			.setCta()
+			.onClick(() => this.close());
+
+		// Add styles
+		this.addStyles();
+	}
+
+	onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
+	}
+
+	private addStyles() {
+		const style = document.createElement('style');
+		style.textContent = `
+			.manual-download-modal {
+				max-width: 700px;
+			}
+
+			.download-error-section,
+			.download-instructions-section,
+			.troubleshooting-section {
+				margin: 1.5em 0;
+				padding: 1em;
+				background-color: var(--background-secondary);
+				border-radius: 8px;
+			}
+
+			.download-error-section {
+				border-left: 4px solid var(--text-error);
+			}
+
+			.download-instructions-section {
+				border-left: 4px solid var(--interactive-accent);
+			}
+
+			.error-intro {
+				margin-bottom: 0.5em;
+				font-weight: 500;
+			}
+
+			.causes-list,
+			.instruction-steps {
+				margin-left: 1.5em;
+				line-height: 1.8;
+			}
+
+			.causes-list li {
+				margin: 0.5em 0;
+			}
+
+			.instruction-steps li {
+				margin: 1.5em 0;
+			}
+
+			.download-link {
+				color: var(--interactive-accent);
+				word-break: break-all;
+				text-decoration: underline;
+			}
+
+			.filename,
+			.filepath {
+				display: inline-block;
+				background-color: var(--background-primary);
+				padding: 0.4em 0.6em;
+				border-radius: 4px;
+				font-family: monospace;
+				font-size: 0.9em;
+				margin: 0.5em 0;
+			}
+
+			.filepath {
+				display: block;
+				word-break: break-all;
+				margin: 0.5em 0;
+			}
+
+			.copy-button,
+			.open-folder-button {
+				margin-left: 0.5em;
+				padding: 0.3em 0.8em;
+				font-size: 0.85em;
+				cursor: pointer;
+				border: 1px solid var(--background-modifier-border);
+				background-color: var(--background-secondary);
+				color: var(--text-normal);
+				border-radius: 4px;
+			}
+
+			.copy-button:hover,
+			.open-folder-button:hover {
+				background-color: var(--background-modifier-hover);
+			}
+
+			.open-folder-button {
+				display: block;
+				margin-top: 0.5em;
+				margin-left: 0;
+			}
+
+			.modal-button-container {
+				display: flex;
+				justify-content: center;
+				margin-top: 2em;
+			}
+
+			.troubleshooting-section {
+				border-left: 4px solid var(--text-warning);
+			}
+
+			.troubleshooting-section ul {
+				margin-left: 1.5em;
+			}
+
+			.troubleshooting-section li {
+				margin: 0.5em 0;
+			}
+		`;
+		this.contentEl.appendChild(style);
+	}
+}
 
 export class ModelDownloadModal extends Modal {
 	private progressBar: HTMLDivElement;
