@@ -83,7 +83,7 @@ This document outlines the business and technical approach for developing an Obs
 
 ### 1. Architecture Overview
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                    Obsidian Plugin                      │
 ├─────────────────────────────────────────────────────────┤
@@ -113,6 +113,7 @@ This document outlines the business and technical approach for developing an Obs
 ### 2. Technology Stack
 
 #### Core Plugin Framework
+
 - **Language**: TypeScript
 - **Build Tool**: esbuild or Rollup
 - **Framework**: Obsidian Plugin API (v1.x)
@@ -121,6 +122,7 @@ This document outlines the business and technical approach for developing an Obs
 #### Transcription Engines
 
 **Option A: Local Processing (Recommended for Windows)**
+
 - **Whisper.cpp**: C++ port of OpenAI Whisper, runs on CPU/GPU
   - Pros: Fast, accurate, no API costs, privacy-preserving
   - Cons: Requires model download (~1-3GB), CPU-intensive
@@ -128,6 +130,7 @@ This document outlines the business and technical approach for developing an Obs
   - Languages: Supports 99+ languages including Greek and English
 
 **Option B: Cloud Processing (Fallback)**
+
 - **OpenAI Whisper API**:
   - Pros: Excellent accuracy, simple API, official
   - Cons: $0.006/minute, requires internet, data leaves device
@@ -141,11 +144,13 @@ This document outlines the business and technical approach for developing an Obs
   - Cons: API-only, pricing varies
 
 **Recommendation**: Implement both with user preference
+
 1. Default to local Whisper.cpp for privacy and cost
 2. Fallback to cloud APIs if user opts in
 3. Allow model selection (tiny, base, small, medium, large)
 
 #### Analysis & Extraction
+
 - **Option A: Local LLM (via LM Studio/Ollama)**:
   - Run small models like Llama 3.2 3B locally
   - Use customizable prompts for extraction
@@ -160,7 +165,7 @@ This document outlines the business and technical approach for developing an Obs
 
 ### 3. Project Structure
 
-```
+```text
 obsidian-transcription-plugin/
 ├── .github/
 │   └── workflows/
@@ -201,6 +206,7 @@ obsidian-transcription-plugin/
 ```
 
 **Key Notes**:
+
 - `models/` directory stores Whisper model binaries locally
 - `.gitignore` excludes `models/*.bin` to avoid committing large files
 - `ModelManager.ts` handles checking, downloading, and validating models
@@ -209,6 +215,7 @@ obsidian-transcription-plugin/
 ### 4. Core Components Design
 
 #### A. TranscriptionService
+
 ```typescript
 interface TranscriptionService {
   transcribe(
@@ -237,6 +244,7 @@ interface TranscriptionResult {
 ```
 
 #### B. AnalysisService
+
 ```typescript
 interface AnalysisService {
   analyze(
@@ -261,6 +269,7 @@ interface AnalysisResult {
 ```
 
 #### C. FileManager
+
 ```typescript
 interface FileManager {
   findAudioFiles(vault: Vault): TFile[];
@@ -279,6 +288,7 @@ interface MarkdownContent {
 ```
 
 #### D. ModelManager
+
 ```typescript
 interface ModelManager {
   checkModelExists(modelSize: ModelSize): Promise<boolean>;
@@ -336,7 +346,7 @@ class WhisperModelManager implements ModelManager {
 
 ### 5. Data Flow
 
-```
+```text
 User Action (Context Menu on audio file)
          ↓
    UI triggers transcription
@@ -461,7 +471,8 @@ Thanks for joining. Today we need to discuss...
 ### 6. User Interface Design
 
 #### A. Settings Panel
-```
+
+```text
 ┌─────────────────────────────────────────┐
 │ Transcription Settings                  │
 ├─────────────────────────────────────────┤
@@ -521,12 +532,14 @@ Thanks for joining. Today we need to discuss...
 ```
 
 #### B. Context Menu Integration
+
 - Right-click on .m4a or .mp3 file
 - Menu option: "Transcribe audio file"
 - Shows progress notification
 - Opens result file when complete
 
 #### C. Ribbon Icon
+
 - Icon in left sidebar
 - Clicking shows: "Select an audio file to transcribe"
 - File picker for manual selection
@@ -536,11 +549,13 @@ Thanks for joining. Today we need to discuss...
 #### Challenge 1: Long Audio Files (2 hours)
 
 **Problem**:
+
 - Large files consume memory
 - Whisper has token limits per chunk
 - User needs progress feedback
 
 **Solution**:
+
 ```typescript
 // Chunk audio into manageable segments
 class ChunkedTranscription {
@@ -562,10 +577,12 @@ class ChunkedTranscription {
 #### Challenge 2: Greek Language Support
 
 **Problem**:
+
 - Not all transcription services handle Greek well
 - User may switch between English and Greek in same audio
 
 **Solution**:
+
 - Use Whisper large model (best multilingual support)
 - Enable automatic language detection per segment
 - Test Greek accuracy before release
@@ -574,10 +591,12 @@ class ChunkedTranscription {
 #### Challenge 3: Speaker Diarization
 
 **Problem**:
+
 - Whisper.cpp doesn't include speaker diarization
 - Cloud services vary in quality
 
 **Solution**:
+
 ```typescript
 // Option 1: Use pyannote.audio locally (Python)
 // Option 2: Use Assembly AI cloud API
@@ -599,10 +618,12 @@ class CloudDiarization implements DiarizationStrategy {
 #### Challenge 4: Local Processing Performance
 
 **Problem**:
+
 - Whisper.cpp on CPU can be slow
 - Windows GPU support varies
 
 **Solution**:
+
 - Use `whisper.cpp` with GPU acceleration (CUDA, Metal, OpenCL)
 - Start with "small" model as default (good speed/accuracy balance)
 - Show estimated time before processing
@@ -612,8 +633,10 @@ class CloudDiarization implements DiarizationStrategy {
 ### 8. Implementation Phases
 
 #### Phase 1: MVP (Core Functionality)
+
 **Duration**: 2-3 weeks
 **Deliverables**:
+
 - Basic plugin structure (Obsidian API integration)
 - Local Whisper.cpp integration (English only)
 - Simple UI (context menu + settings)
@@ -621,13 +644,16 @@ class CloudDiarization implements DiarizationStrategy {
 - Manual trigger via context menu
 
 **Success Criteria**:
+
 - Can transcribe 30-minute English audio file
 - Creates markdown file with transcription
 - No crashes or errors
 
 #### Phase 2: Multilingual & Analysis
+
 **Duration**: 2-3 weeks
 **Deliverables**:
+
 - Greek language support
 - Analysis service integration (local LLM)
 - Customizable prompts
@@ -635,13 +661,16 @@ class CloudDiarization implements DiarizationStrategy {
 - Progress notifications
 
 **Success Criteria**:
+
 - Accurate Greek transcription
 - Extracts action items from meeting audio
 - User can customize prompts
 
 #### Phase 3: Advanced Features
+
 **Duration**: 2-4 weeks
 **Deliverables**:
+
 - Speaker diarization
 - Cloud API fallback options
 - Chunk processing for long files
@@ -649,13 +678,16 @@ class CloudDiarization implements DiarizationStrategy {
 - Error handling & recovery
 
 **Success Criteria**:
+
 - Can handle 2-hour audio files
 - Identifies speakers (when enabled)
 - Graceful handling of failures
 
 #### Phase 4: Polish & Release
+
 **Duration**: 1-2 weeks
 **Deliverables**:
+
 - Documentation (README, user guide)
 - Testing (unit tests, integration tests)
 - Performance optimization
@@ -663,6 +695,7 @@ class CloudDiarization implements DiarizationStrategy {
 - Video demo
 
 **Success Criteria**:
+
 - Accepted into Obsidian Community Plugins
 - Comprehensive documentation
 - All core features stable
@@ -670,12 +703,14 @@ class CloudDiarization implements DiarizationStrategy {
 ### 9. Dependencies & Requirements
 
 #### Development Environment
+
 - Node.js 18+
 - TypeScript 5+
 - Obsidian API types
 - Git for version control
 
 #### Runtime Requirements (User)
+
 - Obsidian 1.4.0+
 - For local processing:
   - Whisper.cpp binary (bundled or downloaded on first run)
@@ -686,6 +721,7 @@ class CloudDiarization implements DiarizationStrategy {
   - API keys (user-provided)
 
 #### External Dependencies
+
 - `whisper.cpp` (C++ binary or Node.js wrapper)
 - `ffmpeg` (for audio format conversion)
 - Optional: Ollama or LM Studio (for local LLM analysis)
@@ -693,17 +729,20 @@ class CloudDiarization implements DiarizationStrategy {
 ### 10. Testing Strategy
 
 #### Unit Tests
+
 - TranscriptionService logic
 - AnalysisService prompt generation
 - FileManager markdown formatting
 - Settings persistence
 
 #### Integration Tests
+
 - End-to-end transcription flow
 - API integration (mocked)
 - File creation and Obsidian vault integration
 
 #### Manual Testing
+
 - Various audio formats (m4a, mp3)
 - Different audio lengths (5min, 30min, 2hr)
 - Greek and English audio samples

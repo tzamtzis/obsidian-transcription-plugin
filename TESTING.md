@@ -17,11 +17,111 @@ This document provides a comprehensive testing plan for the Obsidian Audio Trans
 ### Prerequisites
 
 1. **Obsidian installed** (latest version recommended)
-2. **Plugin installed** in Obsidian vault
-3. **FFmpeg installed** (for local processing)
+2. **Node.js and npm installed** (for building the plugin)
+3. **Git installed** (for cloning the repository)
+4. **FFmpeg installed** (for local processing)
    - Windows: Download from https://ffmpeg.org or use `choco install ffmpeg`
    - macOS: `brew install ffmpeg`
    - Linux: `sudo apt install ffmpeg`
+
+### Installing the Plugin for Testing
+
+#### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/[username]/obsidian-transcription-plugin.git
+cd obsidian-transcription-plugin
+```
+
+#### Step 2: Install Dependencies and Build
+
+```bash
+npm install
+npm run build
+```
+
+This will create the compiled plugin files in the project directory.
+
+#### Step 3: Install in Obsidian Vault
+
+**Option A: Development Mode (Recommended for Testing)**
+
+1. Open your Obsidian vault folder in File Explorer/Finder
+2. Navigate to `.obsidian/plugins/` (create the folders if they don't exist)
+3. Create a new folder called `obsidian-transcription-plugin`
+4. Copy these files from your cloned repository to the plugins folder:
+   - `main.js`
+   - `manifest.json`
+   - `styles.css`
+
+**Option B: Symlink (For Active Development)**
+
+Create a symbolic link from your development folder to the plugins folder:
+
+**Windows (PowerShell as Administrator):**
+```powershell
+New-Item -ItemType SymbolicLink -Path "C:\path\to\vault\.obsidian\plugins\obsidian-transcription-plugin" -Target "C:\path\to\cloned\repo"
+```
+
+**macOS/Linux:**
+```bash
+ln -s /path/to/cloned/repo /path/to/vault/.obsidian/plugins/obsidian-transcription-plugin
+```
+
+#### Step 4: Enable the Plugin
+
+1. Open Obsidian
+2. Go to **Settings** (gear icon)
+3. Navigate to **Community plugins**
+4. If prompted, turn off **Safe mode** (required for community plugins)
+5. Click **Browse** and find "Audio Transcription" in the list
+6. Click **Enable** next to the plugin name
+
+**Or manually enable:**
+1. Go to **Settings** → **Community plugins**
+2. Scroll down to find "Audio Transcription" in the installed plugins list
+3. Toggle it **ON**
+
+#### Step 5: Verify Installation
+
+1. Check that the plugin appears in Settings → Community plugins → Installed plugins
+2. Look for a microphone icon in the left ribbon (default) or your configured icon
+3. Open plugin settings: Settings → Audio Transcription
+4. Verify the settings interface loads correctly
+
+#### Step 6: Reload Plugin During Development
+
+After making code changes and rebuilding:
+
+**Method 1: Reload Plugin**
+1. Open Settings → Community plugins
+2. Find "Audio Transcription"
+3. Toggle OFF then ON
+
+**Method 2: Reload Obsidian**
+- Press `Ctrl+R` (Windows/Linux) or `Cmd+R` (macOS)
+
+**Method 3: Use Hot Reload Plugin**
+- Install the "Hot Reload" plugin for automatic reloading during development
+
+### Accessing Plugin Features
+
+Once installed and enabled, you can access the plugin in several ways:
+
+1. **Ribbon Icon**: Click the microphone icon in the left sidebar
+2. **Command Palette**: Press `Ctrl/Cmd+P` and search for "Transcribe"
+3. **Right-Click Menu**: Right-click any audio file (m4a, mp3, wav, etc.) → "Transcribe audio file"
+4. **Settings**: Access all configuration via Settings → Audio Transcription
+
+### Quick Verification Test
+
+To verify the plugin is working correctly:
+
+1. Add a short audio file (30 seconds) to your vault
+2. Right-click the file → "Transcribe audio file"
+3. Choose a processing mode (cloud is faster for testing)
+4. Watch for the progress modal to appear
+5. Check that a transcription markdown file is created
 
 ### For Local Processing
 

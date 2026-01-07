@@ -5,11 +5,13 @@
 ### 1. Testing with Real Audio Files
 
 **Testing Infrastructure Created** ✅
+
 - [x] Created comprehensive test plan (TESTING.md)
 - [x] Created test utilities (test-utils.js)
 - [x] Created test checklist (TEST-CHECKLIST.md)
 
 **Manual Testing Required** (requires audio files and running plugin)
+
 - [ ] Test with m4a files (various codecs)
 - [ ] Test with mp3 files (various bitrates)
 - [ ] Test with WAV files (verify 16kHz conversion skipping)
@@ -22,6 +24,7 @@
 - [ ] Test error scenarios (corrupted files, network failures, etc.)
 
 **How to Test**:
+
 1. Review TESTING.md for detailed test plan
 2. Use TEST-CHECKLIST.md to track progress
 3. Run `node test-utils.js help` for utility commands
