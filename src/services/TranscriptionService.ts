@@ -419,6 +419,13 @@ tags: [meeting, transcription]
 
 `;
 
+		// Embed the audio file
+		const audioEmbed = `## Audio File
+
+![[${audioFile.path}]]
+
+`;
+
 		// Add speaker renaming instructions if diarization is enabled
 		const speakerInstructions = this.plugin.settings.enableDiarization ? `
 > **👥 Speaker Labels**
@@ -511,7 +518,7 @@ ${analysis.followUps.map((q: string) => `- ${q}`).join('\n')}
 
 *Generated with Obsidian Audio Transcription Plugin*`;
 
-		return frontmatter + header + speakerInstructions + toc + summarySection + keyPointsSection + actionItemsSection + followUpSection + transcriptionSection + footer;
+		return frontmatter + header + audioEmbed + speakerInstructions + toc + summarySection + keyPointsSection + actionItemsSection + followUpSection + transcriptionSection + footer;
 	}
 
 	private formatTranscriptionSection(transcription: TranscriptionResult): string {
