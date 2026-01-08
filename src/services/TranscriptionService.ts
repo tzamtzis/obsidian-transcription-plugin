@@ -5,7 +5,7 @@ import { CloudWhisperProcessor } from '../processors/CloudWhisperProcessor';
 import { OpenRouterProcessor } from '../processors/OpenRouterProcessor';
 import { TranscriptionProgressModal } from '../ui/TranscriptionProgressModal';
 import { getAudioDuration, estimateTranscriptionTime, formatEstimatedTime } from '../utils/audio';
-import { Language } from '../settings';
+import { Language, DateFormat } from '../settings';
 
 export interface TranscriptionResult {
 	text: string;
@@ -401,10 +401,14 @@ export class TranscriptionService {
 		analysis: any,
 		analysisError: string | null = null
 	): string {
+		const now = new Date();
+		const dateFormat = this.plugin.settings.dateFormat;
+		const formattedDate = this.formatDate(now, dateFormat);
+
 		const frontmatter = `---
 audio_file: "${audioFile.name}"
 duration: "${this.formatDuration(transcription.duration)}"
-transcribed_date: ${new Date().toISOString()}
+transcribed_date: ${formattedDate}
 language: "${transcription.language}"
 speakers: ${transcription.speakers?.length || 0}
 tags: [meeting, transcription]
@@ -415,7 +419,7 @@ tags: [meeting, transcription]
 		const header = `# ${audioFile.basename}
 
 > 🎙️ Audio Transcription
-> 📅 ${new Date().toLocaleDateString()} | ⏱️ ${this.formatDuration(transcription.duration)} | 🌐 ${transcription.language.toUpperCase()}
+> 📅 ${formattedDate} | ⏱️ ${this.formatDuration(transcription.duration)} | 🌐 ${transcription.language.toUpperCase()}
 
 `;
 
@@ -580,6 +584,36 @@ ${transcriptText}
 			return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 		}
 		return `${minutes}:${secs.toString().padStart(2, '0')}`;
+	}
+
+	private formatDate(date: Date, format: DateFormat): string {
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		const day = String(date.getDate()).padStart(2, '0');
+		const hours = String(date.getHours()).padStart(2, '0');
+		const minutes = String(date.getMinutes()).padStart(2, '0');
+		const seconds = String(date.getSeconds()).padStart(2, '0');
+
+		switch (format) {
+			case 'iso':
+				return `${year}-${month}-${day}`;
+			case 'us':
+				return `${month}/${day}/${year}`;
+			case 'eu':
+				return `${day}/${month}/${year}`;
+			case 'full':
+				return date.toLocaleDateString('en-US', {
+					year: 'numeric',
+					month: 'long',
+					day: 'numeric'
+				});
+			case 'datetime':
+				return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+			case 'locale':
+				return date.toLocaleDateString();
+			default:
+				return `${year}-${month}-${day}`;
+		}
 	}
 
 	cancel(): void {

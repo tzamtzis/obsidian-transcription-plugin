@@ -5,6 +5,14 @@ import * as os from 'os';
 
 export type ModelSize = 'tiny' | 'base' | 'small' | 'medium' | 'large';
 export type ProcessingMode = 'local' | 'cloud-whisper' | 'cloud-openrouter';
+export type DateFormat =
+	| 'iso' // YYYY-MM-DD
+	| 'us' // MM/DD/YYYY
+	| 'eu' // DD/MM/YYYY
+	| 'full' // Full date (e.g., January 15, 2025)
+	| 'datetime' // YYYY-MM-DD HH:MM:SS
+	| 'locale'; // System locale format
+
 export type Language =
 	| 'auto'
 	| 'en' // English
@@ -27,6 +35,15 @@ export type Language =
 	| 'uk' // Ukrainian
 	| 'nl' // Dutch
 	| 'el'; // Greek
+
+export const DATE_FORMAT_NAMES: Record<DateFormat, string> = {
+	'iso': 'ISO (YYYY-MM-DD)',
+	'us': 'US (MM/DD/YYYY)',
+	'eu': 'European (DD/MM/YYYY)',
+	'full': 'Full (January 15, 2025)',
+	'datetime': 'Date & Time (YYYY-MM-DD HH:MM:SS)',
+	'locale': 'System Locale'
+};
 
 export const LANGUAGE_NAMES: Record<Language, string> = {
 	'auto': 'Auto-detect',
@@ -83,6 +100,7 @@ export interface AudioTranscriptionSettings {
 	autoCreateTags: boolean;
 	skipIfAnalyzed: boolean;
 	deleteAudioAfterTranscription: boolean;
+	dateFormat: DateFormat;
 
 	// UI settings
 	ribbonIcon: string;
@@ -108,6 +126,7 @@ export const DEFAULT_SETTINGS: AudioTranscriptionSettings = {
 	autoCreateTags: true,
 	skipIfAnalyzed: true,
 	deleteAudioAfterTranscription: false,
+	dateFormat: 'iso',
 	ribbonIcon: 'microphone',
 	recentTranscriptions: [],
 	maxRecentTranscriptions: 10
@@ -473,6 +492,22 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.deleteAudioAfterTranscription)
 				.onChange(async (value) => {
 					this.plugin.settings.deleteAudioAfterTranscription = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Date format')
+			.setDesc('Format for dates in the generated markdown files')
+			.addDropdown(dropdown => dropdown
+				.addOption('iso', DATE_FORMAT_NAMES['iso'])
+				.addOption('us', DATE_FORMAT_NAMES['us'])
+				.addOption('eu', DATE_FORMAT_NAMES['eu'])
+				.addOption('full', DATE_FORMAT_NAMES['full'])
+				.addOption('datetime', DATE_FORMAT_NAMES['datetime'])
+				.addOption('locale', DATE_FORMAT_NAMES['locale'])
+				.setValue(this.plugin.settings.dateFormat)
+				.onChange(async (value: DateFormat) => {
+					this.plugin.settings.dateFormat = value;
 					await this.plugin.saveSettings();
 				}));
 
