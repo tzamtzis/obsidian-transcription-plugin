@@ -159,7 +159,15 @@ export default class AudioTranscriptionPlugin extends Plugin {
 	private getMarkdownFileName(audioFile: TFile): string {
 		const baseName = audioFile.basename;
 		const outputFolder = this.settings.outputFolder || '';
-		return outputFolder ? `${outputFolder}/${baseName}.md` : `${baseName}.md`;
+
+		if (outputFolder) {
+			// Use specified output folder
+			return `${outputFolder}/${baseName}.md`;
+		} else {
+			// Place in same directory as audio file
+			const audioDir = audioFile.parent?.path || '';
+			return audioDir ? `${audioDir}/${baseName}.md` : `${baseName}.md`;
+		}
 	}
 
 	private hasTranscriptionContent(content: string): boolean {
