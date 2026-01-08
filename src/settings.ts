@@ -82,6 +82,7 @@ export interface AudioTranscriptionSettings {
 	includeTimestamps: boolean;
 	autoCreateTags: boolean;
 	skipIfAnalyzed: boolean;
+	deleteAudioAfterTranscription: boolean;
 
 	// UI settings
 	ribbonIcon: string;
@@ -106,6 +107,7 @@ export const DEFAULT_SETTINGS: AudioTranscriptionSettings = {
 	includeTimestamps: true,
 	autoCreateTags: true,
 	skipIfAnalyzed: true,
+	deleteAudioAfterTranscription: false,
 	ribbonIcon: 'microphone',
 	recentTranscriptions: [],
 	maxRecentTranscriptions: 10
@@ -461,6 +463,16 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.skipIfAnalyzed)
 				.onChange(async (value) => {
 					this.plugin.settings.skipIfAnalyzed = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Delete audio after transcription')
+			.setDesc('Automatically delete the audio file after successful transcription')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.deleteAudioAfterTranscription)
+				.onChange(async (value) => {
+					this.plugin.settings.deleteAudioAfterTranscription = value;
 					await this.plugin.saveSettings();
 				}));
 

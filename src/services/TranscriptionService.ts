@@ -134,6 +134,17 @@ export class TranscriptionService {
 		const mdFileName = this.getMarkdownFileName(audioFile);
 		await this.plugin.app.workspace.openLinkText(mdFileName, '', true);
 
+		// Delete the audio file if configured to do so
+		if (this.plugin.settings.deleteAudioAfterTranscription) {
+			try {
+				await this.plugin.app.vault.delete(audioFile);
+				new Notice('🗑️ Audio file deleted after successful transcription');
+			} catch (deleteError) {
+				console.error('Failed to delete audio file:', deleteError);
+				new Notice('⚠️ Transcription complete but audio file could not be deleted', 8000);
+			}
+		}
+
 	} catch (error) {
 		console.error('Failed to create markdown file:', error);
 		const errorMessage = this.getErrorMessage(error);
