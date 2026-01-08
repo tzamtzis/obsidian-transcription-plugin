@@ -88,24 +88,17 @@ export default class AudioTranscriptionPlugin extends Plugin {
 	private async transcribeAudioFile(file: TFile) {
 		// Step 1: Ask user to select language
 		const selectedLanguage = await new Promise<Language | null>((resolve) => {
-			let isConfirmed = false;
 			const modal = new LanguageSelectionModal(
 				this.app,
 				this.settings.favoriteLanguages,
 				this.settings.language
 			);
 			modal.setConfirmCallback((language) => {
-				isConfirmed = true;
 				resolve(language);
 			});
-			// Handle modal close without selection (cancelled)
-			const originalClose = modal.close.bind(modal);
-			modal.close = function() {
-				if (!isConfirmed) {
-					resolve(null);
-				}
-				originalClose();
-			};
+			modal.setCancelCallback(() => {
+				resolve(null);
+			});
 			modal.open();
 		});
 

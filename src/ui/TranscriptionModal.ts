@@ -378,6 +378,7 @@ export class ModelDownloadModal extends Modal {
 export class OverwriteConfirmationModal extends Modal {
 	private onConfirm?: (overwrite: boolean) => void;
 	private fileName: string;
+	private confirmed: boolean = false;
 
 	constructor(app: App, fileName: string) {
 		super(app);
@@ -418,6 +419,7 @@ export class OverwriteConfirmationModal extends Modal {
 			.setButtonText('Overwrite')
 			.setCta()
 			.onClick(() => {
+				this.confirmed = true;
 				if (this.onConfirm) {
 					this.onConfirm(true);
 				}
@@ -427,6 +429,7 @@ export class OverwriteConfirmationModal extends Modal {
 		new ButtonComponent(buttonContainer)
 			.setButtonText('Cancel')
 			.onClick(() => {
+				this.confirmed = true;
 				if (this.onConfirm) {
 					this.onConfirm(false);
 				}
@@ -440,6 +443,11 @@ export class OverwriteConfirmationModal extends Modal {
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
+
+		// If modal was closed without clicking a button, treat as cancel
+		if (!this.confirmed && this.onConfirm) {
+			this.onConfirm(false);
+		}
 	}
 
 	setConfirmCallback(callback: (overwrite: boolean) => void) {
@@ -500,8 +508,10 @@ export class OverwriteConfirmationModal extends Modal {
 
 export class LanguageSelectionModal extends Modal {
 	private onConfirm?: (language: Language) => void;
+	private onCancel?: () => void;
 	private favoriteLanguages: Language[];
 	private selectedLanguage: Language;
+	private confirmed: boolean = false;
 
 	constructor(app: App, favoriteLanguages: Language[], defaultLanguage: Language = 'auto') {
 		super(app);
@@ -566,6 +576,7 @@ export class LanguageSelectionModal extends Modal {
 			.setButtonText('Start Transcription')
 			.setCta()
 			.onClick(() => {
+				this.confirmed = true;
 				if (this.onConfirm) {
 					this.onConfirm(this.selectedLanguage);
 				}
@@ -575,6 +586,10 @@ export class LanguageSelectionModal extends Modal {
 		new ButtonComponent(buttonContainer)
 			.setButtonText('Cancel')
 			.onClick(() => {
+				this.confirmed = true;
+				if (this.onCancel) {
+					this.onCancel();
+				}
 				this.close();
 			});
 
@@ -585,10 +600,19 @@ export class LanguageSelectionModal extends Modal {
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
+
+		// If modal was closed without clicking a button, treat as cancel
+		if (!this.confirmed && this.onCancel) {
+			this.onCancel();
+		}
 	}
 
 	setConfirmCallback(callback: (language: Language) => void) {
 		this.onConfirm = callback;
+	}
+
+	setCancelCallback(callback: () => void) {
+		this.onCancel = callback;
 	}
 
 	private addStyles() {
