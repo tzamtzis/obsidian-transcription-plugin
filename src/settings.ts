@@ -26,8 +26,7 @@ export type Language =
 	| 'pl' // Polish
 	| 'uk' // Ukrainian
 	| 'nl' // Dutch
-	| 'el' // Greek
-	| 'multilingual'; // Mixed languages
+	| 'el'; // Greek
 
 export const LANGUAGE_NAMES: Record<Language, string> = {
 	'auto': 'Auto-detect',
@@ -50,8 +49,7 @@ export const LANGUAGE_NAMES: Record<Language, string> = {
 	'pl': 'Polish',
 	'uk': 'Ukrainian',
 	'nl': 'Dutch',
-	'el': 'Greek',
-	'multilingual': 'Mixed (English & Greek)'
+	'el': 'Greek'
 };
 
 export interface RecentTranscription {
@@ -97,7 +95,7 @@ export const DEFAULT_SETTINGS: AudioTranscriptionSettings = {
 	processingMode: 'local',
 	modelSize: 'medium',
 	language: 'auto',
-	favoriteLanguages: ['auto', 'en', 'el', 'multilingual'],
+	favoriteLanguages: ['auto', 'en', 'el'],
 	enableDiarization: false,
 	speakerCount: 2,
 	customInstructions: '',
@@ -186,7 +184,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 
 		const allLanguages: Language[] = [
 			'auto', 'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'zh',
-			'ar', 'hi', 'tr', 'ko', 'nl', 'pl', 'uk', 'vi', 'bn', 'ur', 'el', 'multilingual'
+			'ar', 'hi', 'tr', 'ko', 'nl', 'pl', 'uk', 'vi', 'bn', 'ur', 'el'
 		];
 
 		for (const lang of allLanguages) {

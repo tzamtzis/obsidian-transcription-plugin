@@ -568,6 +568,9 @@ export class LanguageSelectionModal extends Modal {
 		infoDiv.createEl('p', {
 			text: '💡 Tip: You can configure your favorite languages in the plugin settings.'
 		});
+		infoDiv.createEl('p', {
+			text: '🌐 For mixed language content (e.g., English & Greek), select "Auto-detect".'
+		});
 
 		// Buttons
 		const buttonContainer = contentEl.createDiv({ cls: 'language-selection-buttons' });

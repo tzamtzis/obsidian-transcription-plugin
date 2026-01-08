@@ -146,8 +146,8 @@ export class CloudWhisperProcessor {
 		// Use provided language or fall back to settings
 		const lang = language || this.plugin.settings.language;
 
-		// Auto-detect or multilingual means no language code (let whisper auto-detect)
-		if (lang === 'auto' || lang === 'multilingual') {
+		// Auto-detect means no language code (let whisper auto-detect)
+		if (lang === 'auto') {
 			return undefined;
 		}
 
