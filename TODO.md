@@ -12,16 +12,16 @@
 
 **Manual Testing Required** (requires audio files and running plugin)
 
-- [ ] Test with m4a files (various codecs)
-- [ ] Test with mp3 files (various bitrates)
+- [x] Test with m4a files (various codecs)
+- [x] Test with mp3 files (various bitrates)
 - [ ] Test with WAV files (verify 16kHz conversion skipping)
 - [ ] Test with long audio files (2+ hours)
-- [ ] Test Greek language transcription
-- [ ] Test English language transcription
-- [ ] Test auto-detect language mode
+- [x] Test Greek language transcription
+- [x] Test English language transcription
+- [x] Test auto-detect language mode
 - [ ] Test cloud transcription (OpenAI Whisper API)
-- [ ] Test cloud analysis (OpenRouter)
-- [ ] Test error scenarios (corrupted files, network failures, etc.)
+- [x] Test cloud analysis (OpenRouter)
+- [x] Test error scenarios (corrupted files, network failures, etc.)
 
 **How to Test**:
 
@@ -105,13 +105,13 @@
 
 ### 7. File Management
 
-- [ ] Implement duplicate file handling
+- [x] Implement duplicate file handling
   - Check if output markdown already exists
   - Offer to overwrite or create new version
-  - Add timestamp suffix for new versions
-- [ ] Add cleanup of temporary files on plugin unload
-- [ ] Implement automatic cleanup of old .temp.wav files
-- [ ] Add option to delete audio file after successful transcription
+  - ~~Add timestamp suffix for new versions~~
+- [x] Add cleanup of temporary files on plugin unload
+- [x] Implement automatic cleanup of old .temp.wav files
+- [x] Add option to delete audio file after successful transcription
 
 ## Low Priority
 
@@ -136,7 +136,7 @@
   - Export to SRT (subtitles)
   - Export to VTT (WebVTT)
   - Export to plain text
-- [ ] Audio playback in markdown
+- [x] Audio playback in markdown
   - Embed audio player in generated markdown
   - Sync playback with transcript timestamps
 - [ ] Integration with other plugins
