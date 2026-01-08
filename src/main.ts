@@ -1,7 +1,8 @@
 import { Plugin, TFile, Notice, Menu } from 'obsidian';
-import { AudioTranscriptionSettingTab, AudioTranscriptionSettings, DEFAULT_SETTINGS } from './settings';
+import { AudioTranscriptionSettingTab, AudioTranscriptionSettings, DEFAULT_SETTINGS, Language } from './settings';
 import { TranscriptionService } from './services/TranscriptionService';
 import { ModelManager } from './services/ModelManager';
+import { OverwriteConfirmationModal, LanguageSelectionModal } from './ui/TranscriptionModal';
 
 export default class AudioTranscriptionPlugin extends Plugin {
 	settings: AudioTranscriptionSettings;
@@ -85,20 +86,62 @@ export default class AudioTranscriptionPlugin extends Plugin {
 	}
 
 	private async transcribeAudioFile(file: TFile) {
-		// Check if already transcribed
+		// Step 1: Ask user to select language
+		const selectedLanguage = await new Promise<Language | null>((resolve) => {
+			let isConfirmed = false;
+			const modal = new LanguageSelectionModal(
+				this.app,
+				this.settings.favoriteLanguages,
+				this.settings.language
+			);
+			modal.setConfirmCallback((language) => {
+				isConfirmed = true;
+				resolve(language);
+			});
+			// Handle modal close without selection (cancelled)
+			const originalClose = modal.close.bind(modal);
+			modal.close = function() {
+				if (!isConfirmed) {
+					resolve(null);
+				}
+				originalClose();
+			};
+			modal.open();
+		});
+
+		if (!selectedLanguage) {
+			// User cancelled language selection
+			return;
+		}
+
+		// Step 2: Check if already transcribed
 		const mdFile = this.getMarkdownFileName(file);
 		const existingFile = this.app.vault.getAbstractFileByPath(mdFile);
+		let shouldOverwrite = false;
 
 		if (existingFile && existingFile instanceof TFile) {
 			const content = await this.app.vault.read(existingFile);
 			if (this.hasTranscriptionContent(content)) {
-				new Notice('Analysis already available for this file');
-				await this.app.workspace.openLinkText(mdFile, '', true);
-				return;
+				// Show overwrite confirmation modal
+				const confirmed = await new Promise<boolean>((resolve) => {
+					const modal = new OverwriteConfirmationModal(this.app, mdFile);
+					modal.setConfirmCallback((overwrite) => {
+						resolve(overwrite);
+					});
+					modal.open();
+				});
+
+				if (!confirmed) {
+					// User chose not to overwrite, just open the existing file
+					await this.app.workspace.openLinkText(mdFile, '', true);
+					return;
+				}
+
+				shouldOverwrite = true;
 			}
 		}
 
-		// Check if model is available (for local processing)
+		// Step 3: Check if model is available (for local processing)
 		if (this.settings.processingMode === 'local') {
 			const modelExists = await this.modelManager.checkModelExists(this.settings.modelSize);
 			if (!modelExists) {
@@ -111,9 +154,9 @@ export default class AudioTranscriptionPlugin extends Plugin {
 			}
 		}
 
-		// Start transcription
+		// Step 4: Start transcription with selected language
 		try {
-			await this.transcriptionService.transcribe(file);
+			await this.transcriptionService.transcribe(file, shouldOverwrite, selectedLanguage);
 		} catch (error) {
 			console.error('Transcription failed:', error);
 			new Notice(`Transcription failed: ${error.message}`);

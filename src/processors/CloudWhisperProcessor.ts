@@ -1,6 +1,7 @@
 import { Notice, requestUrl } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
 import { TranscriptionResult, TranscriptSegment } from '../services/TranscriptionService';
+import { Language } from '../settings';
 import * as fs from 'fs';
 
 export class CloudWhisperProcessor {
@@ -13,7 +14,8 @@ export class CloudWhisperProcessor {
 
 	async transcribe(
 		audioPath: string,
-		onProgress?: (progress: number, message: string) => void
+		onProgress?: (progress: number, message: string) => void,
+		language?: Language
 	): Promise<TranscriptionResult> {
 		const apiKey = this.plugin.settings.openaiApiKey;
 
@@ -39,7 +41,8 @@ export class CloudWhisperProcessor {
 			const formData = this.createMultipartFormData(
 				audioBuffer,
 				fileName,
-				boundary
+				boundary,
+				language
 			);
 
 			if (onProgress) {
@@ -86,7 +89,8 @@ export class CloudWhisperProcessor {
 	private createMultipartFormData(
 		audioBuffer: Buffer,
 		fileName: string,
-		boundary: string
+		boundary: string,
+		language?: Language
 	): ArrayBuffer {
 		const parts: Buffer[] = [];
 
@@ -107,12 +111,12 @@ export class CloudWhisperProcessor {
 		));
 
 		// Add language field if specified
-		const language = this.getLanguageCode();
-		if (language) {
+		const langCode = this.getLanguageCode(language);
+		if (langCode) {
 			parts.push(Buffer.from(
 				`--${boundary}\r\n` +
 				`Content-Disposition: form-data; name="language"\r\n\r\n` +
-				`${language}\r\n`
+				`${langCode}\r\n`
 			));
 		}
 
@@ -138,12 +142,17 @@ export class CloudWhisperProcessor {
 		return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 	}
 
-	private getLanguageCode(): string | undefined {
-		const { language } = this.plugin.settings;
-		if (language === 'auto') return undefined;
-		if (language === 'en') return 'en';
-		if (language === 'el') return 'el';
-		return undefined;
+	private getLanguageCode(language?: Language): string | undefined {
+		// Use provided language or fall back to settings
+		const lang = language || this.plugin.settings.language;
+
+		// Auto-detect or multilingual means no language code (let whisper auto-detect)
+		if (lang === 'auto' || lang === 'multilingual') {
+			return undefined;
+		}
+
+		// Return the language code directly (they're already in ISO 639-1 format)
+		return lang;
 	}
 
 	private parseOpenAIResponse(data: any): TranscriptionResult {

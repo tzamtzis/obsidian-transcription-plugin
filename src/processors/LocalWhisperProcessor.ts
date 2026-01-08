@@ -1,6 +1,7 @@
 import { Notice } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
 import { TranscriptionResult, TranscriptSegment } from '../services/TranscriptionService';
+import { Language } from '../settings';
 import * as path from 'path';
 import * as fs from 'fs';
 import { spawn, ChildProcess } from 'child_process';
@@ -47,7 +48,8 @@ export class LocalWhisperProcessor {
 
 	async transcribe(
 		audioPath: string,
-		onProgress?: (progress: number, message: string) => void
+		onProgress?: (progress: number, message: string) => void,
+		language?: Language
 	): Promise<TranscriptionResult> {
 		// Check if binary exists
 		if (!await this.checkBinaryExists()) {
@@ -68,7 +70,7 @@ export class LocalWhisperProcessor {
 			const result = await this.runWhisper({
 				modelPath,
 				audioPath: wavPath,
-				language: this.getLanguageCode(),
+				language: this.getLanguageCode(language),
 				threads: 4,
 				outputFormat: 'json'
 			}, onProgress);
@@ -88,12 +90,17 @@ export class LocalWhisperProcessor {
 		}
 	}
 
-	private getLanguageCode(): string | undefined {
-		const { language } = this.plugin.settings;
-		if (language === 'auto') return undefined;
-		if (language === 'en') return 'en';
-		if (language === 'el') return 'el';
-		return undefined;
+	private getLanguageCode(language?: Language): string | undefined {
+		// Use provided language or fall back to settings
+		const lang = language || this.plugin.settings.language;
+
+		// Auto-detect or multilingual means no language code (let whisper auto-detect)
+		if (lang === 'auto' || lang === 'multilingual') {
+			return undefined;
+		}
+
+		// Return the language code directly (they're already in ISO 639-1 format)
+		return lang;
 	}
 
 	private async convertToWav(audioPath: string, onProgress?: (progress: number, message: string) => void): Promise<string> {

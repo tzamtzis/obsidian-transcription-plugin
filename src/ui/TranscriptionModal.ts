@@ -1,5 +1,5 @@
 import { Modal, App, ButtonComponent, Notice } from 'obsidian';
-import { ModelSize } from '../settings';
+import { ModelSize, Language, LANGUAGE_NAMES } from '../settings';
 
 export class ManualDownloadInstructionsModal extends Modal {
 	constructor(app: App, private modelSize: ModelSize, private modelUrl: string, private modelsDir: string) {
@@ -368,6 +368,312 @@ export class ModelDownloadModal extends Modal {
 			.model-download-buttons {
 				display: flex;
 				justify-content: center;
+				margin-top: 1.5em;
+			}
+		`;
+		this.contentEl.appendChild(style);
+	}
+}
+
+export class OverwriteConfirmationModal extends Modal {
+	private onConfirm?: (overwrite: boolean) => void;
+	private fileName: string;
+
+	constructor(app: App, fileName: string) {
+		super(app);
+		this.fileName = fileName;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.addClass('overwrite-confirmation-modal');
+
+		// Title
+		contentEl.createEl('h2', { text: 'Transcription Already Exists' });
+
+		// Message
+		const messageDiv = contentEl.createDiv({ cls: 'overwrite-message' });
+		messageDiv.createEl('p', {
+			text: `A transcription already exists for this audio file:`
+		});
+		messageDiv.createEl('code', {
+			text: this.fileName,
+			cls: 'filename-display'
+		});
+		messageDiv.createEl('p', {
+			text: 'Would you like to overwrite it with a new transcription?'
+		});
+
+		// Warning note
+		const warningDiv = contentEl.createDiv({ cls: 'overwrite-warning' });
+		warningDiv.createEl('p', {
+			text: '⚠️ Note: Overwriting will replace all existing content in the file.'
+		});
+
+		// Buttons
+		const buttonContainer = contentEl.createDiv({ cls: 'overwrite-buttons' });
+
+		new ButtonComponent(buttonContainer)
+			.setButtonText('Overwrite')
+			.setCta()
+			.onClick(() => {
+				if (this.onConfirm) {
+					this.onConfirm(true);
+				}
+				this.close();
+			});
+
+		new ButtonComponent(buttonContainer)
+			.setButtonText('Cancel')
+			.onClick(() => {
+				if (this.onConfirm) {
+					this.onConfirm(false);
+				}
+				this.close();
+			});
+
+		// Add styles
+		this.addStyles();
+	}
+
+	onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
+	}
+
+	setConfirmCallback(callback: (overwrite: boolean) => void) {
+		this.onConfirm = callback;
+	}
+
+	private addStyles() {
+		const style = document.createElement('style');
+		style.textContent = `
+			.overwrite-confirmation-modal {
+				max-width: 500px;
+			}
+
+			.overwrite-message {
+				margin: 1.5em 0;
+				line-height: 1.6;
+			}
+
+			.overwrite-message p {
+				margin: 0.8em 0;
+			}
+
+			.filename-display {
+				display: block;
+				background-color: var(--background-secondary);
+				padding: 0.5em 0.8em;
+				border-radius: 4px;
+				font-family: monospace;
+				font-size: 0.9em;
+				margin: 1em 0;
+				word-break: break-all;
+			}
+
+			.overwrite-warning {
+				background-color: var(--background-secondary);
+				border-left: 4px solid var(--text-warning);
+				padding: 1em;
+				border-radius: 4px;
+				margin: 1em 0;
+			}
+
+			.overwrite-warning p {
+				margin: 0;
+				color: var(--text-warning);
+				font-size: 0.9em;
+			}
+
+			.overwrite-buttons {
+				display: flex;
+				justify-content: center;
+				gap: 1em;
+				margin-top: 2em;
+			}
+		`;
+		this.contentEl.appendChild(style);
+	}
+}
+
+export class LanguageSelectionModal extends Modal {
+	private onConfirm?: (language: Language) => void;
+	private favoriteLanguages: Language[];
+	private selectedLanguage: Language;
+
+	constructor(app: App, favoriteLanguages: Language[], defaultLanguage: Language = 'auto') {
+		super(app);
+		this.favoriteLanguages = favoriteLanguages;
+		this.selectedLanguage = defaultLanguage;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.addClass('language-selection-modal');
+
+		// Title
+		contentEl.createEl('h2', { text: 'Select Transcription Language' });
+
+		// Message
+		const messageDiv = contentEl.createDiv({ cls: 'language-selection-message' });
+		messageDiv.createEl('p', {
+			text: 'Choose the language for this transcription:'
+		});
+
+		// Language options
+		const optionsContainer = contentEl.createDiv({ cls: 'language-options-container' });
+
+		for (const lang of this.favoriteLanguages) {
+			const optionDiv = optionsContainer.createDiv({ cls: 'language-option' });
+			if (lang === this.selectedLanguage) {
+				optionDiv.addClass('selected');
+			}
+
+			const radio = optionDiv.createEl('input', { type: 'radio' });
+			radio.name = 'language';
+			radio.value = lang;
+			radio.checked = lang === this.selectedLanguage;
+
+			const label = optionDiv.createEl('label');
+			label.textContent = LANGUAGE_NAMES[lang];
+			label.prepend(radio);
+
+			optionDiv.addEventListener('click', () => {
+				// Remove selected class from all options
+				optionsContainer.querySelectorAll('.language-option').forEach(el => {
+					el.removeClass('selected');
+				});
+				// Add selected class to clicked option
+				optionDiv.addClass('selected');
+				radio.checked = true;
+				this.selectedLanguage = lang;
+			});
+		}
+
+		// Info text
+		const infoDiv = contentEl.createDiv({ cls: 'language-selection-info' });
+		infoDiv.createEl('p', {
+			text: '💡 Tip: You can configure your favorite languages in the plugin settings.'
+		});
+
+		// Buttons
+		const buttonContainer = contentEl.createDiv({ cls: 'language-selection-buttons' });
+
+		new ButtonComponent(buttonContainer)
+			.setButtonText('Start Transcription')
+			.setCta()
+			.onClick(() => {
+				if (this.onConfirm) {
+					this.onConfirm(this.selectedLanguage);
+				}
+				this.close();
+			});
+
+		new ButtonComponent(buttonContainer)
+			.setButtonText('Cancel')
+			.onClick(() => {
+				this.close();
+			});
+
+		// Add styles
+		this.addStyles();
+	}
+
+	onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
+	}
+
+	setConfirmCallback(callback: (language: Language) => void) {
+		this.onConfirm = callback;
+	}
+
+	private addStyles() {
+		const style = document.createElement('style');
+		style.textContent = `
+			.language-selection-modal {
+				max-width: 500px;
+			}
+
+			.language-selection-message {
+				margin: 1em 0 1.5em 0;
+			}
+
+			.language-selection-message p {
+				margin: 0;
+				font-size: 14px;
+			}
+
+			.language-options-container {
+				max-height: 400px;
+				overflow-y: auto;
+				margin-bottom: 1em;
+				padding: 8px;
+				background-color: var(--background-secondary);
+				border-radius: 4px;
+			}
+
+			.language-option {
+				padding: 12px;
+				margin: 4px 0;
+				background-color: var(--background-primary);
+				border: 2px solid transparent;
+				border-radius: 4px;
+				cursor: pointer;
+				transition: all 0.2s ease;
+			}
+
+			.language-option:hover {
+				background-color: var(--background-modifier-hover);
+				border-color: var(--interactive-accent-hover);
+			}
+
+			.language-option.selected {
+				background-color: var(--interactive-accent);
+				border-color: var(--interactive-accent);
+				color: var(--text-on-accent);
+			}
+
+			.language-option label {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				cursor: pointer;
+				font-size: 14px;
+				width: 100%;
+			}
+
+			.language-option input[type="radio"] {
+				cursor: pointer;
+				width: 18px;
+				height: 18px;
+			}
+
+			.language-option.selected label {
+				color: var(--text-on-accent);
+				font-weight: 500;
+			}
+
+			.language-selection-info {
+				background-color: var(--background-secondary);
+				padding: 12px;
+				border-radius: 4px;
+				margin: 1em 0;
+			}
+
+			.language-selection-info p {
+				margin: 0;
+				font-size: 13px;
+				color: var(--text-muted);
+			}
+
+			.language-selection-buttons {
+				display: flex;
+				justify-content: center;
+				gap: 1em;
 				margin-top: 1.5em;
 			}
 		`;

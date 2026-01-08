@@ -5,6 +5,7 @@ import { CloudWhisperProcessor } from '../processors/CloudWhisperProcessor';
 import { OpenRouterProcessor } from '../processors/OpenRouterProcessor';
 import { TranscriptionProgressModal } from '../ui/TranscriptionProgressModal';
 import { getAudioDuration, estimateTranscriptionTime, formatEstimatedTime } from '../utils/audio';
+import { Language } from '../settings';
 
 export interface TranscriptionResult {
 	text: string;
@@ -40,7 +41,7 @@ export class TranscriptionService {
 		this.openRouterProcessor = new OpenRouterProcessor(plugin);
 	}
 
-	async transcribe(audioFile: TFile): Promise<void> {
+	async transcribe(audioFile: TFile, shouldOverwrite: boolean = false, language?: Language): Promise<void> {
 		// Get audio file path for duration estimation
 		const audioPath = (this.plugin.app.vault.adapter as any).getFullPath(audioFile.path);
 
@@ -64,6 +65,8 @@ export class TranscriptionService {
 		);
 		progressModal.open();
 
+		let transcriptionResult: TranscriptionResult | null = null;
+
 		try {
 			// Validate setup before starting
 			progressModal.updateProgress('validation', 5);
@@ -71,65 +74,73 @@ export class TranscriptionService {
 
 			// Step 1: Transcribe audio
 			progressModal.updateProgress('transcription', 10);
-			const transcriptionResult = await this.transcribeAudio(audioFile);
+			transcriptionResult = await this.transcribeAudio(audioFile, language);
 			progressModal.updateProgress('transcription', 60);
 
-			// Step 2: Analyze content
-			progressModal.updateProgress('analysis', 65);
-			const analysis = await this.analyzeTranscription(transcriptionResult);
+
+	} catch (error) {
+		// Check if user cancelled
+		if (progressModal.isCancelled()) {
+			progressModal.close();
+			new Notice('⚠️ Transcription cancelled');
+			return;
+		}
+
+		// Transcription failed - this is a fatal error
+		console.error('Transcription failed:', error);
+		const errorMessage = this.getErrorMessage(error);
+		progressModal.markError(errorMessage);
+		throw error;
+	}
+
+	// Step 2: Analyze content (with retry logic)
+	let analysis: any = null;
+	let analysisError: string | null = null;
+
+	try {
+		progressModal.updateProgress('analysis', 65);
+		analysis = await this.analyzeTranscription(transcriptionResult);
+		progressModal.updateProgress('analysis', 85);
+	} catch (error) {
+		console.warn('First analysis attempt failed, retrying...', error);
+		progressModal.updateProgress('analysis', 65, '⚠️ Retrying analysis...');
+
+		// Retry analysis once
+		try {
+			analysis = await this.analyzeTranscription(transcriptionResult);
 			progressModal.updateProgress('analysis', 85);
-
-			// Step 3: Create markdown file
-			progressModal.updateProgress('saving', 90);
-			await this.createMarkdownFile(audioFile, transcriptionResult, analysis);
-
-			// Complete
-			progressModal.markComplete();
-			new Notice(' Transcription complete!');
-
-			// Open the created file
-			const mdFileName = this.getMarkdownFileName(audioFile);
-			await this.plugin.app.workspace.openLinkText(mdFileName, '', true);
-
-		} catch (error) {
-			// Check if user cancelled
-			if (progressModal.isCancelled()) {
-				progressModal.close();
-				new Notice('⚠️ Transcription cancelled');
-				return;
-			}
-
-			// Handle specific error types with better messages
-			const errorMessage = this.getErrorMessage(error);
-			const shouldRetry = this.shouldRetryError(error);
-
-			if (shouldRetry) {
-				progressModal.updateProgress('transcription', 10, '⚠️ Retrying transcription...');
-				console.log('First attempt failed, retrying...', error);
-				try {
-				const transcriptionResult = await this.transcribeAudio(audioFile);
-				const analysis = await this.analyzeTranscription(transcriptionResult);
-				await this.createMarkdownFile(audioFile, transcriptionResult, analysis);
-
-				
-				new Notice(' Transcription complete (after retry)!');
-
-				const mdFileName = this.getMarkdownFileName(audioFile);
-				await this.plugin.app.workspace.openLinkText(mdFileName, '', true);
-				} catch (retryError) {
-					console.error('Transcription failed after retry:', retryError);
-					const retryMessage = this.getErrorMessage(retryError);
-					progressModal.markError(retryMessage);
-					throw retryError;
-				}
-			} else {
-				// Don't retry for validation errors or user errors
-				console.error('Transcription failed:', error);
-				progressModal.markError(errorMessage);
-				throw error;
-			}
+			new Notice('Analysis succeeded after retry');
+		} catch (retryError) {
+			console.error('Analysis failed after retry:', retryError);
+			analysisError = this.getErrorMessage(retryError);
+			new Notice(`⚠️ Analysis failed: ${analysisError}. Saving transcription without analysis.`, 8000);
 		}
 	}
+
+	// Step 3: Create markdown file (even if analysis failed)
+	try {
+		progressModal.updateProgress('saving', 90);
+		await this.createMarkdownFile(audioFile, transcriptionResult, analysis, shouldOverwrite, analysisError);
+
+		// Complete
+		progressModal.markComplete();
+		if (analysisError) {
+			new Notice('⚠️ Transcription complete, but analysis failed. Check the file for details.');
+		} else {
+			new Notice(' Transcription complete!');
+		}
+
+		// Open the created file
+		const mdFileName = this.getMarkdownFileName(audioFile);
+		await this.plugin.app.workspace.openLinkText(mdFileName, '', true);
+
+	} catch (error) {
+		console.error('Failed to create markdown file:', error);
+		const errorMessage = this.getErrorMessage(error);
+		progressModal.markError(errorMessage);
+		throw error;
+	}
+}
 
 	private async validateSetup(audioFile: TFile): Promise<void> {
 		const { processingMode } = this.plugin.settings;
@@ -273,7 +284,7 @@ export class TranscriptionService {
 		return `Transcription failed: ${originalMessage}`;
 	}
 
-	private async transcribeAudio(audioFile: TFile): Promise<TranscriptionResult> {
+	private async transcribeAudio(audioFile: TFile, language?: Language): Promise<TranscriptionResult> {
 		// TODO: Implement actual transcription based on settings
 		// For now, return a mock result
 
@@ -281,17 +292,17 @@ export class TranscriptionService {
 
 		if (processingMode === 'local') {
 			// Use local Whisper.cpp
-			return await this.transcribeLocal(audioFile);
+			return await this.transcribeLocal(audioFile, language);
 		} else if (processingMode === 'cloud-whisper') {
 			// Use OpenAI Whisper API
-			return await this.transcribeCloudWhisper(audioFile);
+			return await this.transcribeCloudWhisper(audioFile, language);
 		} else {
 			// Use OpenRouter
-			return await this.transcribeCloudOpenRouter(audioFile);
+			return await this.transcribeCloudOpenRouter(audioFile, language);
 		}
 	}
 
-	private async transcribeLocal(audioFile: TFile): Promise<TranscriptionResult> {
+	private async transcribeLocal(audioFile: TFile, language?: Language): Promise<TranscriptionResult> {
 		// Get the audio file path
 		const audioPath = (this.plugin.app.vault.adapter as any).getFullPath(audioFile.path);
 
@@ -299,20 +310,20 @@ export class TranscriptionService {
 		return await this.localProcessor.transcribe(audioPath, (progress, message) => {
 			this.currentProgress = progress;
 			// Progress updates are handled by the Notice in the main transcribe method
-		});
+		}, language);
 	}
 
-	private async transcribeCloudWhisper(audioFile: TFile): Promise<TranscriptionResult> {
+	private async transcribeCloudWhisper(audioFile: TFile, language?: Language): Promise<TranscriptionResult> {
 		// Get the audio file path
 		const audioPath = (this.plugin.app.vault.adapter as any).getFullPath(audioFile.path);
 
 		// Use CloudWhisperProcessor
 		return await this.cloudWhisperProcessor.transcribe(audioPath, (progress, message) => {
 			this.currentProgress = progress;
-		});
+		}, language);
 	}
 
-	private async transcribeCloudOpenRouter(audioFile: TFile): Promise<TranscriptionResult> {
+	private async transcribeCloudOpenRouter(audioFile: TFile, language?: Language): Promise<TranscriptionResult> {
 		// OpenRouter doesn't support direct transcription
 		// Use OpenAI Whisper instead for now
 		throw new Error('OpenRouter transcription not supported. Please use "Cloud (OpenAI Whisper)" or "Local" mode for transcription.');
@@ -328,7 +339,9 @@ export class TranscriptionService {
 	private async createMarkdownFile(
 		audioFile: TFile,
 		transcription: TranscriptionResult,
-		analysis: any
+		analysis: any,
+		shouldOverwrite: boolean = false,
+		analysisError: string | null = null
 	): Promise<void> {
 		const mdFileName = this.getMarkdownFileName(audioFile);
 
@@ -338,10 +351,17 @@ export class TranscriptionService {
 			await this.ensureFolderExists(outputFolder);
 		}
 
-		const content = this.formatMarkdown(audioFile, transcription, analysis);
+		const content = this.formatMarkdown(audioFile, transcription, analysis, analysisError);
 
-		// Create the file
-		await this.plugin.app.vault.create(mdFileName, content);
+		// Create or overwrite the file
+		const existingFile = this.plugin.app.vault.getAbstractFileByPath(mdFileName);
+		if (existingFile && existingFile instanceof TFile && shouldOverwrite) {
+			// Overwrite existing file
+			await this.plugin.app.vault.modify(existingFile, content);
+		} else {
+			// Create new file
+			await this.plugin.app.vault.create(mdFileName, content);
+		}
 
 		// Add to recent transcriptions
 		await this.addToRecentTranscriptions(audioFile, mdFileName, transcription);
@@ -367,7 +387,8 @@ export class TranscriptionService {
 	private formatMarkdown(
 		audioFile: TFile,
 		transcription: TranscriptionResult,
-		analysis: any
+		analysis: any,
+		analysisError: string | null = null
 	): string {
 		const frontmatter = `---
 audio_file: "${audioFile.name}"
@@ -399,45 +420,79 @@ tags: [meeting, transcription]
 
 		// Table of contents for longer transcripts
 		const hasTOC = transcription.duration > 600; // 10+ minutes
-		const toc = hasTOC ? `## Table of Contents
+		let toc = '';
+		if (hasTOC) {
+			if (analysisError) {
+				toc = `## Table of Contents
 
-- [Summary](#summary)
-- [Key Points](#key-points)
-${analysis.actionItems?.length > 0 ? '- [Action Items](#action-items)\n' : ''}${analysis.followUps?.length > 0 ? '- [Follow-up Questions](#follow-up-questions)\n' : ''}- [Full Transcription](#full-transcription)
+- [Analysis Failed](#️-analysis-failed)
+- [Full Transcription](#full-transcription)
 
 ---
 
-` : '';
+`;
+			} else {
+				toc = `## Table of Contents
 
-		const summarySection = `## Summary
+- [Summary](#summary)
+- [Key Points](#key-points)
+${analysis?.actionItems?.length > 0 ? '- [Action Items](#action-items)\n' : ''}${analysis?.followUps?.length > 0 ? '- [Follow-up Questions](#follow-up-questions)\n' : ''}- [Full Transcription](#full-transcription)
+
+---
+
+`;
+			}
+		}
+
+		// If analysis failed, show error note instead of analysis sections
+		let summarySection = '';
+		let keyPointsSection = '';
+		let actionItemsSection = '';
+		let followUpSection = '';
+
+		if (analysisError) {
+			summarySection = `## ⚠️ Analysis Failed
+
+The automatic analysis and summarization failed with the following error:
+
+> **Error:** ${analysisError}
+
+The transcription below was completed successfully, but automatic summarization, key point extraction, and action item detection could not be performed.
+
+You can manually add a summary and key points below, or try re-analyzing the transcription later.
+
+`;
+		} else if (analysis) {
+			summarySection = `## Summary
 
 ${analysis.summary}
 
 `;
 
-		const keyPointsSection = `## Key Points
+			keyPointsSection = `## Key Points
 
 ${analysis.keyPoints.map((p: string) => `- ${p}`).join('\n')}
 
 `;
 
-		// Add action items if available
-		const actionItemsSection = analysis.actionItems && analysis.actionItems.length > 0
-			? `## Action Items
+			// Add action items if available
+			actionItemsSection = analysis.actionItems && analysis.actionItems.length > 0
+				? `## Action Items
 
 ${analysis.actionItems.map((item: string) => `- [ ] ${item}`).join('\n')}
 
 `
-			: '';
+				: '';
 
-		// Add follow-up questions if available
-		const followUpSection = analysis.followUps && analysis.followUps.length > 0
-			? `## Follow-up Questions
+			// Add follow-up questions if available
+			followUpSection = analysis.followUps && analysis.followUps.length > 0
+				? `## Follow-up Questions
 
 ${analysis.followUps.map((q: string) => `- ${q}`).join('\n')}
 
 `
-			: '';
+				: '';
+		}
 
 		const transcriptionSection = this.formatTranscriptionSection(transcription);
 

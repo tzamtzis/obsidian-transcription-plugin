@@ -5,7 +5,54 @@ import * as os from 'os';
 
 export type ModelSize = 'tiny' | 'base' | 'small' | 'medium' | 'large';
 export type ProcessingMode = 'local' | 'cloud-whisper' | 'cloud-openrouter';
-export type Language = 'auto' | 'en' | 'el' | 'multilingual';
+export type Language =
+	| 'auto'
+	| 'en' // English
+	| 'zh' // Chinese (Mandarin)
+	| 'es' // Spanish
+	| 'hi' // Hindi
+	| 'ar' // Arabic
+	| 'pt' // Portuguese
+	| 'bn' // Bengali
+	| 'ru' // Russian
+	| 'ja' // Japanese
+	| 'de' // German
+	| 'fr' // French
+	| 'ur' // Urdu
+	| 'it' // Italian
+	| 'tr' // Turkish
+	| 'ko' // Korean
+	| 'vi' // Vietnamese
+	| 'pl' // Polish
+	| 'uk' // Ukrainian
+	| 'nl' // Dutch
+	| 'el' // Greek
+	| 'multilingual'; // Mixed languages
+
+export const LANGUAGE_NAMES: Record<Language, string> = {
+	'auto': 'Auto-detect',
+	'en': 'English',
+	'zh': 'Chinese (Mandarin)',
+	'es': 'Spanish',
+	'hi': 'Hindi',
+	'ar': 'Arabic',
+	'pt': 'Portuguese',
+	'bn': 'Bengali',
+	'ru': 'Russian',
+	'ja': 'Japanese',
+	'de': 'German',
+	'fr': 'French',
+	'ur': 'Urdu',
+	'it': 'Italian',
+	'tr': 'Turkish',
+	'ko': 'Korean',
+	'vi': 'Vietnamese',
+	'pl': 'Polish',
+	'uk': 'Ukrainian',
+	'nl': 'Dutch',
+	'el': 'Greek',
+	'multilingual': 'Mixed (English & Greek)'
+};
 
 export interface RecentTranscription {
 	audioFileName: string;
@@ -20,6 +67,7 @@ export interface AudioTranscriptionSettings {
 	processingMode: ProcessingMode;
 	modelSize: ModelSize;
 	language: Language;
+	favoriteLanguages: Language[];
 	enableDiarization: boolean;
 	speakerCount: number;
 
@@ -49,6 +97,7 @@ export const DEFAULT_SETTINGS: AudioTranscriptionSettings = {
 	processingMode: 'local',
 	modelSize: 'medium',
 	language: 'auto',
+	favoriteLanguages: ['auto', 'en', 'el', 'multilingual'],
 	enableDiarization: false,
 	speakerCount: 2,
 	customInstructions: '',
@@ -128,18 +177,40 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		}
 
 		new Setting(containerEl)
-			.setName('Default language')
-			.setDesc('Select the primary language of your audio files')
-			.addDropdown(dropdown => dropdown
-				.addOption('auto', 'Auto-detect - Let the AI figure it out')
-				.addOption('en', 'English only')
-				.addOption('el', 'Greek only')
-				.addOption('multilingual', 'Multilingual (both English and Greek)')
-				.setValue(this.plugin.settings.language)
-				.onChange(async (value: Language) => {
-					this.plugin.settings.language = value;
-					await this.plugin.saveSettings();
-				}));
+			.setName('Favorite languages')
+			.setDesc('Select the languages you commonly transcribe. You will be asked to choose from these before each transcription.')
+			.setClass('favorite-languages-setting');
+
+		// Create checkboxes for all languages
+		const favLangContainer = containerEl.createDiv({ cls: 'favorite-languages-container' });
+
+		const allLanguages: Language[] = [
+			'auto', 'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ja', 'zh',
+			'ar', 'hi', 'tr', 'ko', 'nl', 'pl', 'uk', 'vi', 'bn', 'ur', 'el', 'multilingual'
+		];
+
+		for (const lang of allLanguages) {
+			const langDiv = favLangContainer.createDiv({ cls: 'favorite-language-item' });
+			const checkbox = langDiv.createEl('input', { type: 'checkbox' });
+			checkbox.checked = this.plugin.settings.favoriteLanguages.includes(lang);
+			checkbox.addEventListener('change', async () => {
+				if (checkbox.checked) {
+					if (!this.plugin.settings.favoriteLanguages.includes(lang)) {
+						this.plugin.settings.favoriteLanguages.push(lang);
+					}
+				} else {
+					this.plugin.settings.favoriteLanguages = this.plugin.settings.favoriteLanguages.filter(l => l !== lang);
+				}
+				await this.plugin.saveSettings();
+			});
+
+			const label = langDiv.createEl('label');
+			label.textContent = LANGUAGE_NAMES[lang];
+			label.prepend(checkbox);
+		}
+
+		// Add styles for the favorite languages UI
+		this.addFavoriteLanguagesStyles();
 
 		new Setting(containerEl)
 			.setName('Enable speaker diarization')
@@ -652,6 +723,53 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 				font-size: 12px;
 				color: var(--text-muted);
 				margin-top: 4px;
+			}
+		`;
+		document.head.appendChild(style);
+	}
+
+	private addFavoriteLanguagesStyles() {
+		// Check if styles already added
+		if (document.getElementById('favorite-languages-styles')) {
+			return;
+		}
+
+		const style = document.createElement('style');
+		style.id = 'favorite-languages-styles';
+		style.textContent = `
+			.favorite-languages-container {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+				gap: 8px;
+				margin-top: 12px;
+				margin-bottom: 16px;
+				padding: 12px;
+				background-color: var(--background-secondary);
+				border-radius: 4px;
+			}
+
+			.favorite-language-item {
+				display: flex;
+				align-items: center;
+			}
+
+			.favorite-language-item label {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				cursor: pointer;
+				font-size: 13px;
+				color: var(--text-normal);
+			}
+
+			.favorite-language-item input[type="checkbox"] {
+				cursor: pointer;
+				width: 16px;
+				height: 16px;
+			}
+
+			.favorite-language-item label:hover {
+				color: var(--interactive-accent);
 			}
 		`;
 		document.head.appendChild(style);
