@@ -507,16 +507,20 @@ export class OverwriteConfirmationModal extends Modal {
 }
 
 export class LanguageSelectionModal extends Modal {
-	private onConfirm?: (language: Language) => void;
+	private onConfirm?: (language: Language, customInstructions?: string) => void;
 	private onCancel?: () => void;
 	private favoriteLanguages: Language[];
 	private selectedLanguage: Language;
+	private customInstructionsOverride: string;
+	private defaultCustomInstructions: string;
 	private confirmed: boolean = false;
 
-	constructor(app: App, favoriteLanguages: Language[], defaultLanguage: Language = 'auto') {
+	constructor(app: App, favoriteLanguages: Language[], defaultLanguage: Language = 'auto', defaultCustomInstructions: string = '') {
 		super(app);
 		this.favoriteLanguages = favoriteLanguages;
 		this.selectedLanguage = defaultLanguage;
+		this.defaultCustomInstructions = defaultCustomInstructions;
+		this.customInstructionsOverride = defaultCustomInstructions;
 	}
 
 	onOpen() {
@@ -572,6 +576,39 @@ export class LanguageSelectionModal extends Modal {
 			text: '🌐 For mixed language content (e.g., English & Greek), select "Auto-detect".'
 		});
 
+		// Custom instructions override (collapsible)
+		const advancedSection = contentEl.createEl('details', { cls: 'language-selection-advanced' });
+		const summary = advancedSection.createEl('summary', { cls: 'language-selection-advanced-summary' });
+		summary.setText('⚙️ Advanced: Override Analysis Instructions');
+
+		const advancedContent = advancedSection.createDiv({ cls: 'language-selection-advanced-content' });
+		advancedContent.createEl('p', {
+			text: 'Optionally override the default analysis instructions for this transcription only:',
+			cls: 'advanced-description'
+		});
+
+		const textarea = advancedContent.createEl('textarea', {
+			cls: 'custom-instructions-textarea',
+			placeholder: 'Enter custom analysis instructions (leave empty to use default settings)'
+		});
+		textarea.value = this.customInstructionsOverride;
+		textarea.addEventListener('input', () => {
+			this.customInstructionsOverride = textarea.value;
+		});
+
+		// Show current default if available
+		if (this.defaultCustomInstructions) {
+			const defaultNote = advancedContent.createDiv({ cls: 'default-instructions-note' });
+			defaultNote.createEl('p', {
+				text: 'Current default instructions:',
+				cls: 'default-instructions-label'
+			});
+			const defaultText = defaultNote.createEl('div', {
+				cls: 'default-instructions-text'
+			});
+			defaultText.setText(this.defaultCustomInstructions);
+		}
+
 		// Buttons
 		const buttonContainer = contentEl.createDiv({ cls: 'language-selection-buttons' });
 
@@ -581,7 +618,11 @@ export class LanguageSelectionModal extends Modal {
 			.onClick(() => {
 				this.confirmed = true;
 				if (this.onConfirm) {
-					this.onConfirm(this.selectedLanguage);
+					// Pass empty string if override is same as default
+					const override = this.customInstructionsOverride !== this.defaultCustomInstructions
+						? this.customInstructionsOverride
+						: undefined;
+					this.onConfirm(this.selectedLanguage, override);
 				}
 				this.close();
 			});
@@ -610,7 +651,7 @@ export class LanguageSelectionModal extends Modal {
 		}
 	}
 
-	setConfirmCallback(callback: (language: Language) => void) {
+	setConfirmCallback(callback: (language: Language, customInstructions?: string) => void) {
 		this.onConfirm = callback;
 	}
 
@@ -702,6 +743,89 @@ export class LanguageSelectionModal extends Modal {
 				justify-content: center;
 				gap: 1em;
 				margin-top: 1.5em;
+			}
+
+			.language-selection-advanced {
+				margin: 1.5em 0;
+				padding: 0;
+				border: 1px solid var(--background-modifier-border);
+				border-radius: 4px;
+				background-color: var(--background-secondary);
+			}
+
+			.language-selection-advanced-summary {
+				padding: 12px;
+				cursor: pointer;
+				user-select: none;
+				font-size: 14px;
+				font-weight: 500;
+				color: var(--text-muted);
+				list-style: none;
+			}
+
+			.language-selection-advanced-summary::-webkit-details-marker {
+				display: none;
+			}
+
+			.language-selection-advanced-summary:hover {
+				color: var(--text-normal);
+				background-color: var(--background-modifier-hover);
+			}
+
+			.language-selection-advanced[open] .language-selection-advanced-summary {
+				border-bottom: 1px solid var(--background-modifier-border);
+				color: var(--text-normal);
+			}
+
+			.language-selection-advanced-content {
+				padding: 12px;
+			}
+
+			.advanced-description {
+				margin: 0 0 12px 0;
+				font-size: 13px;
+				color: var(--text-muted);
+			}
+
+			.custom-instructions-textarea {
+				width: 100%;
+				min-height: 100px;
+				padding: 8px;
+				border: 1px solid var(--background-modifier-border);
+				border-radius: 4px;
+				background-color: var(--background-primary);
+				color: var(--text-normal);
+				font-family: var(--font-text);
+				font-size: 13px;
+				resize: vertical;
+			}
+
+			.custom-instructions-textarea:focus {
+				outline: none;
+				border-color: var(--interactive-accent);
+			}
+
+			.default-instructions-note {
+				margin-top: 12px;
+				padding: 8px;
+				background-color: var(--background-primary);
+				border-radius: 4px;
+				border-left: 3px solid var(--interactive-accent);
+			}
+
+			.default-instructions-label {
+				margin: 0 0 6px 0;
+				font-size: 12px;
+				font-weight: 500;
+				color: var(--text-muted);
+			}
+
+			.default-instructions-text {
+				font-size: 12px;
+				color: var(--text-muted);
+				font-style: italic;
+				white-space: pre-wrap;
+				word-break: break-word;
 			}
 		`;
 		this.contentEl.appendChild(style);

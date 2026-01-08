@@ -41,7 +41,7 @@ export class TranscriptionService {
 		this.openRouterProcessor = new OpenRouterProcessor(plugin);
 	}
 
-	async transcribe(audioFile: TFile, shouldOverwrite: boolean = false, language?: Language): Promise<void> {
+	async transcribe(audioFile: TFile, shouldOverwrite: boolean = false, language?: Language, customInstructionsOverride?: string): Promise<void> {
 		// Get audio file path for duration estimation
 		const audioPath = (this.plugin.app.vault.adapter as any).getFullPath(audioFile.path);
 
@@ -99,7 +99,7 @@ export class TranscriptionService {
 
 	try {
 		progressModal.updateProgress('analysis', 65);
-		analysis = await this.analyzeTranscription(transcriptionResult);
+		analysis = await this.analyzeTranscription(transcriptionResult, customInstructionsOverride);
 		progressModal.updateProgress('analysis', 85);
 	} catch (error) {
 		console.warn('First analysis attempt failed, retrying...', error);
@@ -107,7 +107,7 @@ export class TranscriptionService {
 
 		// Retry analysis once
 		try {
-			analysis = await this.analyzeTranscription(transcriptionResult);
+			analysis = await this.analyzeTranscription(transcriptionResult, customInstructionsOverride);
 			progressModal.updateProgress('analysis', 85);
 			new Notice('Analysis succeeded after retry');
 		} catch (retryError) {
@@ -340,8 +340,11 @@ export class TranscriptionService {
 		throw new Error('OpenRouter transcription not supported. Please use "Cloud (OpenAI Whisper)" or "Local" mode for transcription.');
 	}
 
-	private async analyzeTranscription(result: TranscriptionResult): Promise<any> {
-		const { customInstructions } = this.plugin.settings;
+	private async analyzeTranscription(result: TranscriptionResult, customInstructionsOverride?: string): Promise<any> {
+		// Use override if provided, otherwise use settings default
+		const customInstructions = customInstructionsOverride !== undefined
+			? customInstructionsOverride
+			: this.plugin.settings.customInstructions;
 
 		// Use OpenRouter for analysis (cloud-only)
 		return await this.openRouterProcessor.analyzeText(result.text, customInstructions);

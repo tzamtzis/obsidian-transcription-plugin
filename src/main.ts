@@ -86,15 +86,16 @@ export default class AudioTranscriptionPlugin extends Plugin {
 	}
 
 	private async transcribeAudioFile(file: TFile) {
-		// Step 1: Ask user to select language
-		const selectedLanguage = await new Promise<Language | null>((resolve) => {
+		// Step 1: Ask user to select language and optionally override custom instructions
+		const result = await new Promise<{ language: Language; customInstructions?: string } | null>((resolve) => {
 			const modal = new LanguageSelectionModal(
 				this.app,
 				this.settings.favoriteLanguages,
-				this.settings.language
+				this.settings.language,
+				this.settings.customInstructions
 			);
-			modal.setConfirmCallback((language) => {
-				resolve(language);
+			modal.setConfirmCallback((language, customInstructions) => {
+				resolve({ language, customInstructions });
 			});
 			modal.setCancelCallback(() => {
 				resolve(null);
@@ -102,10 +103,13 @@ export default class AudioTranscriptionPlugin extends Plugin {
 			modal.open();
 		});
 
-		if (!selectedLanguage) {
+		if (!result) {
 			// User cancelled language selection
 			return;
 		}
+
+		const selectedLanguage = result.language;
+		const customInstructionsOverride = result.customInstructions;
 
 		// Step 2: Check if already transcribed
 		const mdFile = this.getMarkdownFileName(file);
@@ -147,9 +151,9 @@ export default class AudioTranscriptionPlugin extends Plugin {
 			}
 		}
 
-		// Step 4: Start transcription with selected language
+		// Step 4: Start transcription with selected language and custom instructions
 		try {
-			await this.transcriptionService.transcribe(file, shouldOverwrite, selectedLanguage);
+			await this.transcriptionService.transcribe(file, shouldOverwrite, selectedLanguage, customInstructionsOverride);
 		} catch (error) {
 			console.error('Transcription failed:', error);
 			new Notice(`Transcription failed: ${error.message}`);
