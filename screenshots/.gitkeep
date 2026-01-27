@@ -1,0 +1,11 @@
+# Screenshots folder for README and documentation
+
+Place plugin screenshots here for use in documentation.
+
+Recommended screenshots:
+- settings-panel.png - Main settings interface
+- transcription-modal.png - Transcription configuration modal
+- progress-modal.png - Transcription progress display
+- output-example.png - Example of generated markdown output
+- ribbon-icon.png - Plugin icon in Obsidian ribbon
+- recent-transcriptions.png - Recent transcriptions list in settings
