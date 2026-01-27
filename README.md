@@ -799,23 +799,23 @@ A: No. This plugin works with free Obsidian.
 - ✓ Automatic model management
 - ✓ Duplicate detection
 - ✓ Error retry logic
+- ✓ Custom prompt templates
 
 ### Planned Features (Future Versions)
 
-**v1.1 - Enhanced Analysis**
+#### v1.1 - Enhanced Analysis
 
-- Custom prompt templates
 - Multiple analysis profiles (meeting, lecture, interview)
 - Improved speaker identification
 - Export to other formats (PDF, DOCX)
 
-**v1.2 - Speaker Diarization**
+#### v1.2 - Speaker Diarization
 
 - Full speaker identification
 - Speaker labeling and naming
 - Improved multi-speaker accuracy
 
-**v2.0 - Advanced Features**
+#### v2.0 - Advanced Features
 
 - Real-time transcription during recording
 - Video file support (auto-extract audio)
@@ -823,7 +823,7 @@ A: No. This plugin works with free Obsidian.
 - Mobile app support (iOS/Android)
 - Integration with other plugins (Calendar, Tasks)
 
-**Community Requests**
+#### Community Requests
 
 - Your feedback shapes the roadmap! Submit feature requests on GitHub.
 
@@ -834,9 +834,8 @@ A: No. This plugin works with free Obsidian.
 ### Getting Help
 
 - **Documentation**: You're reading it!
-- **GitHub Issues**: Report bugs or request features at [github.com/yourname/obsidian-transcription-plugin](https://github.com)
+- **GitHub Issues**: Report bugs or request features at [github.com/tzamtzis/obsidian-transcription-plugin](github.com/tzamtzis/obsidian-transcription-plugin)
 - **Obsidian Forum**: Discuss the plugin with other users
-- **Discord**: Join the community chat (link in GitHub)
 
 ### Contributing
 
@@ -873,7 +872,7 @@ MIT License - Free to use, modify, and distribute.
 
 ## Changelog
 
-### v1.0.0 (TBD)
+### v1.0.0 (2026-01-27)
 
 - Initial release
 - Local and cloud transcription

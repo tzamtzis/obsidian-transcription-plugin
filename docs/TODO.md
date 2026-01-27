@@ -118,7 +118,7 @@
 ### 8. Performance Optimization
 
 - [ ] Implement streaming for very large audio files
-- [ ] Add chunking for 2+ hour audio files
+- [X] Add chunking for 2+ hour audio files
 - [ ] Optimize memory usage during transcription
 - [ ] Add caching for repeated transcriptions
 - [ ] Implement parallel processing for multiple files
