@@ -3,7 +3,7 @@
   "name": "Audio Transcription",
   "version": "1.0.0",
   "minAppVersion": "1.4.0",
-  "description": "Transcribe audio files (m4a, mp3) and extract actionable insights using AI. Supports Greek and English with local or cloud processing.",
+  "description": "Transcribe audio files (m4a, mp3) and extract actionable insights using AI. Supports all languages with local or cloud processing.",
   "author": "Panagiotis Tzamtzis",
   "authorUrl": "https://github.com/tzamtzis/obsidian-transcription-plugin",
   "fundingUrl": "https://buymeacoffee.com/tzam",
