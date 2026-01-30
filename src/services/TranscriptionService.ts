@@ -27,6 +27,13 @@ export interface SpeakerInfo {
 	label: string;
 }
 
+export interface AnalysisResult {
+	summary: string;
+	keyPoints: string[];
+	actionItems: string[];
+	followUps: string[];
+}
+
 export class TranscriptionService {
 	private plugin: AudioTranscriptionPlugin;
 	private currentProgress: number = 0;
@@ -94,7 +101,7 @@ export class TranscriptionService {
 	}
 
 	// Step 2: Analyze content (with retry logic)
-	let analysis: any = null;
+	let analysis: AnalysisResult | null = null;
 	let analysisError: string | null = null;
 
 	try {
@@ -137,7 +144,7 @@ export class TranscriptionService {
 		// Delete the audio file if configured to do so
 		if (this.plugin.settings.deleteAudioAfterTranscription) {
 			try {
-				await this.plugin.app.vault.delete(audioFile);
+				await this.plugin.app.fileManager.trashFile(audioFile);
 				new Notice('🗑️ Audio file deleted after successful transcription');
 			} catch (deleteError) {
 				console.error('Failed to delete audio file:', deleteError);
@@ -176,8 +183,8 @@ export class TranscriptionService {
 
 			// Check if model is downloaded
 			const modelPath = this.plugin.modelManager.getModelPath(this.plugin.settings.modelSize);
-			const fs = require('fs');
-			if (!fs.existsSync(modelPath)) {
+			const modelExists = await this.plugin.modelManager.checkModelExists(this.plugin.settings.modelSize);
+			if (!modelExists) {
 				throw new Error(`Model "${this.plugin.settings.modelSize}" not found.\n\n` +
 					'Solution: Go to Settings → Audio Transcription → Download Model');
 			}
@@ -218,7 +225,7 @@ export class TranscriptionService {
 		}
 	}
 
-	private shouldRetryError(error: any): boolean {
+	private shouldRetryError(error: Error): boolean {
 		const message = error.message?.toLowerCase() || '';
 
 		// Don't retry validation errors
@@ -242,7 +249,7 @@ export class TranscriptionService {
 		return true;
 	}
 
-	private getErrorMessage(error: any): string {
+	private getErrorMessage(error: Error): string {
 		const originalMessage = error.message || 'Unknown error occurred';
 
 		// Return validation errors as-is (they already have good messages)
@@ -340,7 +347,7 @@ export class TranscriptionService {
 		throw new Error('OpenRouter transcription not supported. Please use "Cloud (OpenAI Whisper)" or "Local" mode for transcription.');
 	}
 
-	private async analyzeTranscription(result: TranscriptionResult, customInstructionsOverride?: string): Promise<any> {
+	private async analyzeTranscription(result: TranscriptionResult, customInstructionsOverride?: string): Promise<AnalysisResult> {
 		// Use override if provided, otherwise use settings default
 		const customInstructions = customInstructionsOverride !== undefined
 			? customInstructionsOverride
@@ -353,7 +360,7 @@ export class TranscriptionService {
 	private async createMarkdownFile(
 		audioFile: TFile,
 		transcription: TranscriptionResult,
-		analysis: any,
+		analysis: AnalysisResult | null,
 		shouldOverwrite: boolean = false,
 		analysisError: string | null = null
 	): Promise<void> {
@@ -401,7 +408,7 @@ export class TranscriptionService {
 	private formatMarkdown(
 		audioFile: TFile,
 		transcription: TranscriptionResult,
-		analysis: any,
+		analysis: AnalysisResult | null,
 		analysisError: string | null = null
 	): string {
 		const now = new Date();
@@ -461,7 +468,7 @@ tags: [meeting, transcription]
 
 - [Summary](#summary)
 - [Key Points](#key-points)
-${analysis?.actionItems?.length > 0 ? '- [Action Items](#action-items)\n' : ''}${analysis?.followUps?.length > 0 ? '- [Follow-up Questions](#follow-up-questions)\n' : ''}- [Full Transcription](#full-transcription)
+${(analysis?.actionItems?.length ?? 0) > 0 ? '- [Action Items](#action-items)\n' : ''}${(analysis?.followUps?.length ?? 0) > 0 ? '- [Follow-up Questions](#follow-up-questions)\n' : ''}- [Full Transcription](#full-transcription)
 
 ---
 

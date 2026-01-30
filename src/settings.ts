@@ -144,15 +144,12 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		// Add styles for recent transcriptions
-		this.addRecentTranscriptionsStyles();
-
-		containerEl.createEl('h2', { text: 'Audio Transcription Settings' });
+		new Setting(containerEl).setName('Audio Transcription Settings').setHeading();
 
 		// ========================================
 		// TRANSCRIPTION SETTINGS
 		// ========================================
-		containerEl.createEl('h3', { text: 'Transcription Settings' });
+		new Setting(containerEl).setName('Transcription Settings').setHeading();
 
 		new Setting(containerEl)
 			.setName('Processing mode')
@@ -187,11 +184,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 					}));
 
 			// Show system-based recommendation
-			const recommendationDiv = containerEl.createDiv({ cls: 'setting-item-description' });
-			recommendationDiv.style.marginTop = '-8px';
-			recommendationDiv.style.marginBottom = '16px';
-			recommendationDiv.style.paddingLeft = '0';
-			recommendationDiv.style.fontSize = '13px';
+			const recommendationDiv = containerEl.createDiv({ cls: 'setting-item-description audio-transcription-recommendation' });
 			recommendationDiv.setText(this.getModelRecommendationText());
 		}
 
@@ -228,8 +221,6 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 			label.prepend(checkbox);
 		}
 
-		// Add styles for the favorite languages UI
-		this.addFavoriteLanguagesStyles();
 
 		new Setting(containerEl)
 			.setName('Enable speaker diarization')
@@ -245,24 +236,22 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// Show diarization info and speaker count when enabled
 		if (this.plugin.settings.enableDiarization) {
 			// Info about diarization status
-			const infoDiv = containerEl.createDiv({ cls: 'setting-item-description' });
-			infoDiv.style.marginTop = '-8px';
-			infoDiv.style.marginBottom = '12px';
-			infoDiv.style.padding = '8px 12px';
-			infoDiv.style.backgroundColor = 'var(--background-secondary)';
-			infoDiv.style.borderRadius = '4px';
-			infoDiv.style.fontSize = '13px';
+			const infoDiv = containerEl.createDiv({ cls: 'setting-item-description audio-transcription-diarization-info' });
 
-			infoDiv.innerHTML = `
-				<strong>ℹ️ Speaker Diarization Status:</strong><br/>
-				<span style="color: var(--text-muted);">
-				Currently, the plugin structure supports speaker labels, but automatic speaker detection is not yet implemented.<br/><br/>
-				<strong>Future options:</strong><br/>
-				• Cloud services (AssemblyAI, Deepgram) - Coming soon<br/>
-				• Local diarization (pyannote-audio) - Requires Python setup<br/><br/>
-				For now, you can manually edit speaker labels in the generated markdown files.
-				</span>
-			`;
+			const title = infoDiv.createEl('strong', { text: 'ℹ️ Speaker Diarization Status:' });
+
+			const infoText = infoDiv.createSpan({ cls: 'text-muted' });
+			infoText.createSpan({ text: 'Currently, the plugin structure supports speaker labels, but automatic speaker detection is not yet implemented.' });
+			infoText.createEl('br');
+			infoText.createEl('br');
+			infoText.createEl('strong', { text: 'Future options:' });
+			infoText.createEl('br');
+			infoText.createSpan({ text: '• Cloud services (AssemblyAI, Deepgram) - Coming soon' });
+			infoText.createEl('br');
+			infoText.createSpan({ text: '• Local diarization (pyannote-audio) - Requires Python setup' });
+			infoText.createEl('br');
+			infoText.createEl('br');
+			infoText.createSpan({ text: 'For now, you can manually edit speaker labels in the generated markdown files.' });
 
 			// Speaker count setting
 			new Setting(containerEl)
@@ -281,7 +270,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// ========================================
 		// ANALYSIS SETTINGS
 		// ========================================
-		containerEl.createEl('h3', { text: 'Analysis Settings' });
+		new Setting(containerEl).setName('Analysis Settings').setHeading();
 
 		containerEl.createEl('p', {
 			text: 'Analysis uses OpenRouter to extract summaries, key points, and action items from transcriptions.',
@@ -291,35 +280,33 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Custom analysis instructions')
 			.setDesc('Add extra instructions for the AI to follow when analyzing transcripts')
-			.addTextArea(text => text
-				.setPlaceholder('Example: Focus on technical decisions and deadlines. Tag people using @name format.')
-				.setValue(this.plugin.settings.customInstructions)
-				.onChange(async (value) => {
-					this.plugin.settings.customInstructions = value;
-					await this.plugin.saveSettings();
-				}))
-			.then(setting => {
-				setting.controlEl.querySelector('textarea')?.setAttribute('rows', '4');
+			.addTextArea(text => {
+				text.setPlaceholder('Example: Focus on technical decisions and deadlines. Tag people using @name format.')
+					.setValue(this.plugin.settings.customInstructions)
+					.onChange(async (value) => {
+						this.plugin.settings.customInstructions = value;
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.setAttribute('rows', '4');
 			});
 
 		// ========================================
 		// API KEYS
 		// ========================================
-		containerEl.createEl('h3', { text: 'API Keys (for cloud processing)' });
+		new Setting(containerEl).setName('API Keys (for cloud processing)').setHeading();
 
 		if (this.plugin.settings.processingMode === 'cloud-whisper') {
 			new Setting(containerEl)
 				.setName('OpenAI API key')
 				.setDesc('Your OpenAI API key for Whisper API transcription')
-				.addText(text => text
-					.setPlaceholder('sk-...')
-					.setValue(this.plugin.settings.openaiApiKey)
-					.onChange(async (value) => {
-						this.plugin.settings.openaiApiKey = value;
-						await this.plugin.saveSettings();
-					}))
-				.then(setting => {
-					setting.controlEl.querySelector('input')?.setAttribute('type', 'password');
+				.addText(text => {
+					text.setPlaceholder('sk-...')
+						.setValue(this.plugin.settings.openaiApiKey)
+						.onChange(async (value) => {
+							this.plugin.settings.openaiApiKey = value;
+							await this.plugin.saveSettings();
+						});
+					text.inputEl.setAttribute('type', 'password');
 				});
 		}
 
@@ -327,15 +314,14 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('OpenRouter API key')
 			.setDesc('Required for AI-powered transcript analysis')
-			.addText(text => text
-				.setPlaceholder('sk-or-...')
-				.setValue(this.plugin.settings.openrouterApiKey)
-				.onChange(async (value) => {
-					this.plugin.settings.openrouterApiKey = value;
-					await this.plugin.saveSettings();
-				}))
-			.then(setting => {
-				setting.controlEl.querySelector('input')?.setAttribute('type', 'password');
+			.addText(text => {
+				text.setPlaceholder('sk-or-...')
+					.setValue(this.plugin.settings.openrouterApiKey)
+					.onChange(async (value) => {
+						this.plugin.settings.openrouterApiKey = value;
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.setAttribute('type', 'password');
 			});
 
 		new Setting(containerEl)
@@ -353,7 +339,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// MODEL MANAGEMENT
 		// ========================================
 		if (this.plugin.settings.processingMode === 'local') {
-			containerEl.createEl('h3', { text: 'Model Management' });
+			new Setting(containerEl).setName('Model Management').setHeading();
 
 			const modelInfo = containerEl.createDiv();
 			modelInfo.createEl('p', { text: 'Local models path: ./models/' });
@@ -442,7 +428,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// ========================================
 		// OUTPUT SETTINGS
 		// ========================================
-		containerEl.createEl('h3', { text: 'Output Settings' });
+		new Setting(containerEl).setName('Output Settings').setHeading();
 
 		new Setting(containerEl)
 			.setName('Output folder')
@@ -514,7 +500,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// ========================================
 		// UI SETTINGS
 		// ========================================
-		containerEl.createEl('h3', { text: 'UI Settings' });
+		new Setting(containerEl).setName('UI Settings').setHeading();
 
 		new Setting(containerEl)
 			.setName('Ribbon icon')
@@ -538,7 +524,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// ========================================
 		// RECENT TRANSCRIPTIONS
 		// ========================================
-		containerEl.createEl('h3', { text: 'Recent Transcriptions' });
+		new Setting(containerEl).setName('Recent Transcriptions').setHeading();
 
 		if (this.plugin.settings.recentTranscriptions.length === 0) {
 			containerEl.createEl('p', {
@@ -590,7 +576,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// STATUS INFORMATION
 		// ========================================
 		if (this.plugin.settings.processingMode === 'local') {
-			containerEl.createEl('h3', { text: 'System Status' });
+			new Setting(containerEl).setName('System Status').setHeading();
 
 			// Binary status
 			const binaryStatusDiv = containerEl.createDiv({ cls: 'status-section' });
@@ -614,26 +600,19 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl('p', { text: 'Installed models:' });
 
-		const list = containerEl.createEl('ul');
-		list.style.listStyle = 'none';
-		list.style.paddingLeft = '1em';
+		const list = containerEl.createEl('ul', { cls: 'audio-transcription-model-list' });
 
 		for (const model of models) {
-			const item = list.createEl('li');
-			item.style.marginBottom = '0.5em';
-			item.style.fontFamily = 'var(--font-monospace)';
 			const exists = await this.plugin.modelManager.checkModelExists(model);
 			const selected = model === this.plugin.settings.modelSize;
+
+			const itemCls = selected ? 'audio-transcription-model-item selected' : 'audio-transcription-model-item';
+			const item = list.createEl('li', { cls: itemCls });
 
 			const prefix = selected ? '> ' : '  ';
 			const statusIcon = exists ? '[OK]' : '[  ]';
 			const statusText = exists ? `Installed (${modelSizes[model]})` : 'Not downloaded';
 			item.textContent = `${prefix}${statusIcon} ${model}.bin - ${statusText}`;
-
-			if (selected) {
-				item.style.fontWeight = 'bold';
-				item.style.color = 'var(--interactive-accent)';
-			}
 		}
 	}
 
@@ -649,10 +628,10 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 
 		if (binaryExists) {
 			setting.setDesc('✅ Binary installed and ready');
-			setting.descEl.style.color = 'var(--text-success)';
+			setting.descEl.addClass('audio-transcription-status-success');
 		} else {
 			setting.setDesc('❌ Binary not installed. Download it from Model Management section above.');
-			setting.descEl.style.color = 'var(--text-error)';
+			setting.descEl.addClass('audio-transcription-status-error');
 		}
 
 		// Add current model status
@@ -665,10 +644,10 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 
 		if (modelExists) {
 			modelSetting.setDesc(`✅ Model "${modelName}" is installed`);
-			modelSetting.descEl.style.color = 'var(--text-success)';
+			modelSetting.descEl.addClass('audio-transcription-status-success');
 		} else {
 			modelSetting.setDesc(`❌ Model "${modelName}" is not installed. Download it from Model Management section above.`);
-			modelSetting.descEl.style.color = 'var(--text-error)';
+			modelSetting.descEl.addClass('audio-transcription-status-error');
 		}
 	}
 
@@ -728,95 +707,4 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		return sizes.indexOf(a) - sizes.indexOf(b);
 	}
 
-	private addRecentTranscriptionsStyles() {
-		// Check if styles already added
-		if (document.getElementById('recent-transcriptions-styles')) {
-			return;
-		}
-
-		const style = document.createElement('style');
-		style.id = 'recent-transcriptions-styles';
-		style.textContent = `
-			.recent-transcriptions-list {
-				margin-bottom: 16px;
-			}
-
-			.recent-transcription-item {
-				padding: 8px 12px;
-				margin-bottom: 8px;
-				background-color: var(--background-secondary);
-				border-radius: 4px;
-				border-left: 3px solid var(--interactive-accent);
-			}
-
-			.recent-transcription-item:hover {
-				background-color: var(--background-secondary-alt);
-			}
-
-			.recent-transcription-link {
-				color: var(--text-normal);
-				text-decoration: none;
-				font-weight: 500;
-				cursor: pointer;
-			}
-
-			.recent-transcription-link:hover {
-				color: var(--interactive-accent);
-			}
-
-			.recent-transcription-meta {
-				font-size: 12px;
-				color: var(--text-muted);
-				margin-top: 4px;
-			}
-		`;
-		document.head.appendChild(style);
-	}
-
-	private addFavoriteLanguagesStyles() {
-		// Check if styles already added
-		if (document.getElementById('favorite-languages-styles')) {
-			return;
-		}
-
-		const style = document.createElement('style');
-		style.id = 'favorite-languages-styles';
-		style.textContent = `
-			.favorite-languages-container {
-				display: grid;
-				grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-				gap: 8px;
-				margin-top: 12px;
-				margin-bottom: 16px;
-				padding: 12px;
-				background-color: var(--background-secondary);
-				border-radius: 4px;
-			}
-
-			.favorite-language-item {
-				display: flex;
-				align-items: center;
-			}
-
-			.favorite-language-item label {
-				display: flex;
-				align-items: center;
-				gap: 8px;
-				cursor: pointer;
-				font-size: 13px;
-				color: var(--text-normal);
-			}
-
-			.favorite-language-item input[type="checkbox"] {
-				cursor: pointer;
-				width: 16px;
-				height: 16px;
-			}
-
-			.favorite-language-item label:hover {
-				color: var(--interactive-accent);
-			}
-		`;
-		document.head.appendChild(style);
-	}
 }

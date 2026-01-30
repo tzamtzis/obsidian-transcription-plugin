@@ -304,14 +304,14 @@ export class ModelDownloadModal extends Modal {
 
 	setError(error: string) {
 		this.statusText.setText(`Error: ${error}`);
-		this.statusText.style.color = 'var(--text-error)';
+		this.statusText.addClass('model-download-status-error');
 		this.cancelButton.setButtonText('Close');
 	}
 
 	setComplete() {
 		this.progressBar.style.width = '100%';
 		this.statusText.setText('✓ Download complete!');
-		this.statusText.style.color = 'var(--text-success)';
+		this.statusText.addClass('model-download-status-success');
 		this.cancelButton.setButtonText('Close');
 	}
 

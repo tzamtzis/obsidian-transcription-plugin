@@ -1,7 +1,6 @@
 import { requestUrl } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
-import { TranscriptionResult, TranscriptSegment } from '../services/TranscriptionService';
-import * as fs from 'fs';
+import { TranscriptionResult, AnalysisResult } from '../services/TranscriptionService';
 
 export class OpenRouterProcessor {
 	private plugin: AudioTranscriptionPlugin;
@@ -24,7 +23,7 @@ export class OpenRouterProcessor {
 	async analyzeText(
 		transcript: string,
 		customInstructions?: string
-	): Promise<any> {
+	): Promise<AnalysisResult> {
 		const apiKey = this.plugin.settings.openrouterApiKey;
 		const modelName = this.plugin.settings.openrouterModelName;
 
@@ -120,13 +119,13 @@ Format your response as follows:
 		return prompt;
 	}
 
-	private parseAnalysisResult(content: string): any {
+	private parseAnalysisResult(content: string): AnalysisResult {
 		// Parse the markdown-formatted response
-		const sections = {
+		const sections: AnalysisResult = {
 			summary: '',
-			keyPoints: [] as string[],
-			actionItems: [] as string[],
-			followUps: [] as string[]
+			keyPoints: [],
+			actionItems: [],
+			followUps: []
 		};
 
 		// Extract summary

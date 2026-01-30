@@ -121,7 +121,7 @@ export class TranscriptionProgressModal extends Modal {
 
 	markComplete() {
 		this.updateProgress('complete', 100, '✅ Transcription complete!');
-		this.cancelButton.style.display = 'none';
+		this.cancelButton.addClass('audio-transcription-hidden');
 
 		// Auto-close after 2 seconds
 		setTimeout(() => {

@@ -1,8 +1,21 @@
-import { Notice, requestUrl } from 'obsidian';
+import { requestUrl } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
 import { TranscriptionResult, TranscriptSegment } from '../services/TranscriptionService';
 import { Language } from '../settings';
 import * as fs from 'fs';
+
+interface OpenAIWhisperSegment {
+	start: number;
+	end: number;
+	text: string;
+}
+
+interface OpenAIWhisperResponse {
+	text?: string;
+	segments?: OpenAIWhisperSegment[];
+	language?: string;
+	duration?: number;
+}
 
 export class CloudWhisperProcessor {
 	private plugin: AudioTranscriptionPlugin;
@@ -155,9 +168,9 @@ export class CloudWhisperProcessor {
 		return lang;
 	}
 
-	private parseOpenAIResponse(data: any): TranscriptionResult {
+	private parseOpenAIResponse(data: OpenAIWhisperResponse): TranscriptionResult {
 		// OpenAI Whisper API returns verbose_json format with segments
-		const segments: TranscriptSegment[] = (data.segments || []).map((seg: any) => ({
+		const segments: TranscriptSegment[] = (data.segments || []).map((seg: OpenAIWhisperSegment) => ({
 			start: seg.start || 0,
 			end: seg.end || 0,
 			text: seg.text || ''

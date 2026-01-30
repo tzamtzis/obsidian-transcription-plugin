@@ -5,7 +5,7 @@ import { ModelDownloadModal } from '../ui/TranscriptionModal';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
-import { IncomingMessage } from 'http';
+import { IncomingMessage, ClientRequest } from 'http';
 
 export interface ModelInfo {
 	size: ModelSize;
@@ -30,7 +30,8 @@ export class ModelManager {
 		this.plugin = plugin;
 		// Use plugin's data directory for models
 		const pluginDir = (this.plugin.app.vault.adapter as any).basePath;
-		this.modelsDir = path.join(pluginDir, '.obsidian', 'plugins', 'obsidian-transcription-plugin', 'models');
+		const configDir = this.plugin.app.vault.configDir;
+		this.modelsDir = path.join(pluginDir, configDir, 'plugins', 'obsidian-transcription-plugin', 'models');
 		this.ensureModelsDirectory();
 	}
 
@@ -107,7 +108,7 @@ export class ModelManager {
 
 		let downloadCancelled = false;
 		let writeStream: fs.WriteStream | null = null;
-		let request: any = null;
+		let request: ClientRequest | null = null;
 
 		// Set up cancellation
 		modal.setCancelCallback(() => {
@@ -124,148 +125,139 @@ export class ModelManager {
 			}
 		});
 
-		return new Promise(async (resolve, reject) => {
-			try {
-				modal.setStatus('Testing connection to server...');
+		try {
+			modal.setStatus('Testing connection to server...');
 
-				// Test connection first
-				const canConnect = await this.testConnection(url);
-				if (!canConnect) {
-					const errorMsg = 'Cannot reach Hugging Face servers. This could be due to:\n' +
-						'• Firewall or antivirus blocking the connection\n' +
-						'• Network proxy requiring configuration\n' +
-						'• Network connection issues\n\n' +
-						'You can try:\n' +
-						'1. Temporarily disable your antivirus/firewall\n' +
-						'2. Check if you need to configure a proxy\n' +
-						'3. Download the model manually from huggingface.co';
-					console.error(errorMsg);
-					reject(new Error('Cannot reach Hugging Face servers. Check firewall/proxy settings or download manually.'));
-					return;
-				}
-
-				modal.setStatus('Connecting to server...');
-
-				// Follow redirects and download
-				this.downloadWithRedirects(url, tempPath, (downloaded, total) => {
-					if (onProgress) {
-						onProgress(downloaded, total);
-					}
-					modal.updateProgress(downloaded, total);
-				}, (req, stream) => {
-					request = req;
-					writeStream = stream;
-				}).then(async () => {
-					if (downloadCancelled) {
-						reject(new Error('Download cancelled by user'));
-						return;
-					}
-
-					modal.setStatus('Finalizing download...');
-
-					// Wait a moment for file system to release locks (especially on Windows)
-					// This prevents EPERM/EBUSY errors when renaming
-					await new Promise(resolve => setTimeout(resolve, 500));
-
-					// Move temp file to final location with retry logic
-					let retries = 3;
-					while (retries > 0) {
-						try {
-							if (fs.existsSync(tempPath)) {
-								// Check if destination file exists and remove it
-								if (fs.existsSync(modelPath)) {
-									fs.unlinkSync(modelPath);
-								}
-								fs.renameSync(tempPath, modelPath);
-							}
-							break; // Success!
-						} catch (error) {
-							retries--;
-							if (retries === 0) {
-								// Final attempt failed
-								throw new Error(`Failed to finalize download: ${error.message}`);
-							}
-							// Wait before retry
-							await new Promise(resolve => setTimeout(resolve, 1000));
-						}
-					}
-
-					modal.setComplete();
-					new Notice(`${modelSize} model downloaded successfully!`);
-
-					// Close modal after 2 seconds
-					setTimeout(() => {
-						modal.close();
-					}, 2000);
-
-					resolve();
-				}).catch((error) => {
-					if (downloadCancelled) {
-						modal.close();
-						reject(new Error('Download cancelled by user'));
-						return;
-					}
-
-					// Log detailed error information
-					const errorCode = (error as any).code;
-					console.error('Failed to download model:', {
-						error: error,
-						message: error.message,
-						code: errorCode,
-						errno: (error as any).errno,
-						syscall: (error as any).syscall,
-						stack: error.stack
-					});
-
-					// Show user-friendly error message
-					let errorMessage = 'Download failed';
-					let showManualInstructions = false;
-
-					if (error.message.includes('Cannot reach Hugging Face')) {
-						errorMessage = error.message;
-						showManualInstructions = true;
-					} else if (error.message.includes('timeout') || error.message.includes('stalled')) {
-						errorMessage = 'Download timed out - connection too slow or unstable';
-						showManualInstructions = true;
-					} else if (errorCode === 'ENOSPC') {
-						errorMessage = 'Not enough disk space';
-					} else if (errorCode === 'EACCES' || errorCode === 'EPERM') {
-						errorMessage = 'Permission denied - check antivirus or folder permissions';
-					} else if (errorCode === 'ECONNRESET' || errorCode === 'ETIMEDOUT' || errorCode === 'ENOTFOUND') {
-						errorMessage = 'Network connection issue - check firewall/proxy settings';
-						showManualInstructions = true;
-					} else if (error.message) {
-						errorMessage = error.message;
-					}
-
-					modal.setError(errorMessage);
-
-					// Show manual download instructions if network-related
-					if (showManualInstructions) {
-						console.log('\n═══════════════════════════════════════════════════════════');
-						console.log('MANUAL DOWNLOAD INSTRUCTIONS:');
-						console.log('═══════════════════════════════════════════════════════════');
-						console.log(`1. Open in browser: ${this.modelUrls[modelSize]}`);
-						console.log(`2. Save the file as: ggml-${modelSize}.bin`);
-						console.log(`3. Copy the file to: ${this.modelsDir}`);
-						console.log('4. Restart Obsidian');
-						console.log('═══════════════════════════════════════════════════════════\n');
-
-						new Notice('Download failed. See console (Ctrl+Shift+I) for manual download instructions.', 10000);
-					}
-
-					// Clean up temp file
-					if (fs.existsSync(tempPath)) {
-						fs.unlinkSync(tempPath);
-					}
-
-					reject(error);
-				});
-			} catch (error) {
-				modal.setError(error.message || 'Failed to start download');
-				reject(error);
+			// Test connection first
+			const canConnect = await this.testConnection(url);
+			if (!canConnect) {
+				const errorMsg = 'Cannot reach Hugging Face servers. This could be due to:\n' +
+					'• Firewall or antivirus blocking the connection\n' +
+					'• Network proxy requiring configuration\n' +
+					'• Network connection issues\n\n' +
+					'You can try:\n' +
+					'1. Temporarily disable your antivirus/firewall\n' +
+					'2. Check if you need to configure a proxy\n' +
+					'3. Download the model manually from huggingface.co';
+				console.error(errorMsg);
+				throw new Error('Cannot reach Hugging Face servers. Check firewall/proxy settings or download manually.');
 			}
-		});
+
+			modal.setStatus('Connecting to server...');
+
+			// Follow redirects and download
+			await this.downloadWithRedirects(url, tempPath, (downloaded, total) => {
+				if (onProgress) {
+					onProgress(downloaded, total);
+				}
+				modal.updateProgress(downloaded, total);
+			}, (req, stream) => {
+				request = req;
+				writeStream = stream;
+			});
+
+			if (downloadCancelled) {
+				throw new Error('Download cancelled by user');
+			}
+
+			modal.setStatus('Finalizing download...');
+
+			// Wait a moment for file system to release locks (especially on Windows)
+			// This prevents EPERM/EBUSY errors when renaming
+			await new Promise(resolve => setTimeout(resolve, 500));
+
+			// Move temp file to final location with retry logic
+			let retries = 3;
+			while (retries > 0) {
+				try {
+					if (fs.existsSync(tempPath)) {
+						// Check if destination file exists and remove it
+						if (fs.existsSync(modelPath)) {
+							fs.unlinkSync(modelPath);
+						}
+						fs.renameSync(tempPath, modelPath);
+					}
+					break; // Success!
+				} catch (error) {
+					retries--;
+					if (retries === 0) {
+						// Final attempt failed
+						throw new Error(`Failed to finalize download: ${(error as Error).message}`);
+					}
+					// Wait before retry
+					await new Promise(resolve => setTimeout(resolve, 1000));
+				}
+			}
+
+			modal.setComplete();
+			new Notice(`${modelSize} model downloaded successfully!`);
+
+			// Close modal after 2 seconds
+			setTimeout(() => {
+				modal.close();
+			}, 2000);
+
+		} catch (error) {
+			if (downloadCancelled) {
+				modal.close();
+				throw new Error('Download cancelled by user');
+			}
+
+			// Log detailed error information
+			const err = error as Error & { code?: string; errno?: number; syscall?: string };
+			console.error('Failed to download model:', {
+				error: err,
+				message: err.message,
+				code: err.code,
+				errno: err.errno,
+				syscall: err.syscall,
+				stack: err.stack
+			});
+
+			// Show user-friendly error message
+			let errorMessage = 'Download failed';
+			let showManualInstructions = false;
+
+			if (err.message.includes('Cannot reach Hugging Face')) {
+				errorMessage = err.message;
+				showManualInstructions = true;
+			} else if (err.message.includes('timeout') || err.message.includes('stalled')) {
+				errorMessage = 'Download timed out - connection too slow or unstable';
+				showManualInstructions = true;
+			} else if (err.code === 'ENOSPC') {
+				errorMessage = 'Not enough disk space';
+			} else if (err.code === 'EACCES' || err.code === 'EPERM') {
+				errorMessage = 'Permission denied - check antivirus or folder permissions';
+			} else if (err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT' || err.code === 'ENOTFOUND') {
+				errorMessage = 'Network connection issue - check firewall/proxy settings';
+				showManualInstructions = true;
+			} else if (err.message) {
+				errorMessage = err.message;
+			}
+
+			modal.setError(errorMessage);
+
+			// Show manual download instructions if network-related
+			if (showManualInstructions) {
+				console.debug('\n═══════════════════════════════════════════════════════════');
+				console.debug('MANUAL DOWNLOAD INSTRUCTIONS:');
+				console.debug('═══════════════════════════════════════════════════════════');
+				console.debug(`1. Open in browser: ${this.modelUrls[modelSize]}`);
+				console.debug(`2. Save the file as: ggml-${modelSize}.bin`);
+				console.debug(`3. Copy the file to: ${this.modelsDir}`);
+				console.debug('4. Restart Obsidian');
+				console.debug('═══════════════════════════════════════════════════════════\n');
+
+				new Notice('Download failed. See console (Ctrl+Shift+I) for manual download instructions.', 10000);
+			}
+
+			// Clean up temp file
+			if (fs.existsSync(tempPath)) {
+				fs.unlinkSync(tempPath);
+			}
+
+			throw error;
+		}
 	}
 
 	private async testConnection(url: string): Promise<boolean> {
@@ -301,7 +293,7 @@ export class ModelManager {
 		url: string,
 		destPath: string,
 		onProgress: (downloaded: number, total: number) => void,
-		onStreamCreated?: (request: any, stream: fs.WriteStream) => void,
+		onStreamCreated?: (request: ClientRequest, stream: fs.WriteStream) => void,
 		maxRedirects: number = 5
 	): Promise<void> {
 		return new Promise((resolve, reject) => {

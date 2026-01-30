@@ -131,8 +131,8 @@ export class DiarizationService {
 		// TODO: Implement actual diarization
 		// For now, return transcription unchanged
 
-		console.log('Diarization requested but not yet implemented');
-		console.log(`Audio: ${audioPath}, Expected speakers: ${this.plugin.settings.speakerCount}`);
+		console.debug('Diarization requested but not yet implemented');
+		console.debug(`Audio: ${audioPath}, Expected speakers: ${this.plugin.settings.speakerCount}`);
 
 		// Future implementation will:
 		// 1. Call diarization service (cloud or local)
