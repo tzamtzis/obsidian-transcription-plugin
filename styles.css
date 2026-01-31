@@ -1,0 +1,137 @@
+/* Audio Transcription Plugin Styles */
+
+/* Status indicator colors */
+.audio-transcription-status-success {
+	color: var(--text-success);
+}
+
+.audio-transcription-status-error {
+	color: var(--text-error);
+}
+
+/* Modal utility classes */
+.audio-transcription-hidden {
+	display: none;
+}
+
+/* Progress modal status colors */
+.model-download-status-error {
+	color: var(--text-error);
+}
+
+.model-download-status-success {
+	color: var(--text-success);
+}
+
+/* Settings page recommendation text */
+.audio-transcription-recommendation {
+	margin-top: -8px;
+	margin-bottom: 16px;
+	padding-left: 0;
+	font-size: 13px;
+}
+
+/* Diarization info box */
+.audio-transcription-diarization-info {
+	margin-top: -8px;
+	margin-bottom: 12px;
+	padding: 8px 12px;
+	background-color: var(--background-secondary);
+	border-radius: 4px;
+	font-size: 13px;
+}
+
+.audio-transcription-diarization-info strong {
+	display: block;
+	margin-bottom: 4px;
+}
+
+.audio-transcription-diarization-info .text-muted {
+	color: var(--text-muted);
+}
+
+/* Model status list */
+.audio-transcription-model-list {
+	list-style: none;
+	padding-left: 1em;
+}
+
+.audio-transcription-model-item {
+	margin-bottom: 0.5em;
+	font-family: var(--font-monospace);
+}
+
+.audio-transcription-model-item.selected {
+	font-weight: bold;
+	color: var(--interactive-accent);
+}
+
+/* Recent transcriptions */
+.recent-transcriptions-list {
+	margin-bottom: 16px;
+}
+
+.recent-transcription-item {
+	padding: 8px 12px;
+	margin-bottom: 8px;
+	background-color: var(--background-secondary);
+	border-radius: 4px;
+	border-left: 3px solid var(--interactive-accent);
+}
+
+.recent-transcription-item:hover {
+	background-color: var(--background-secondary-alt);
+}
+
+.recent-transcription-link {
+	color: var(--text-normal);
+	text-decoration: none;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.recent-transcription-link:hover {
+	color: var(--interactive-accent);
+}
+
+.recent-transcription-meta {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-top: 4px;
+}
+
+/* Favorite languages grid */
+.favorite-languages-container {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 8px;
+	margin-top: 12px;
+	margin-bottom: 16px;
+	padding: 12px;
+	background-color: var(--background-secondary);
+	border-radius: 4px;
+}
+
+.favorite-language-item {
+	display: flex;
+	align-items: center;
+}
+
+.favorite-language-item label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	font-size: 13px;
+	color: var(--text-normal);
+}
+
+.favorite-language-item input[type="checkbox"] {
+	cursor: pointer;
+	width: 16px;
+	height: 16px;
+}
+
+.favorite-language-item label:hover {
+	color: var(--interactive-accent);
+}

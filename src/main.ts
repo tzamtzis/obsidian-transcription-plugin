@@ -11,7 +11,7 @@ export default class AudioTranscriptionPlugin extends Plugin {
 	ribbonIconEl: HTMLElement | null = null;
 
 	async onload() {
-		console.log('Loading Audio Transcription Plugin');
+		console.debug('Loading Audio Transcription Plugin');
 
 		await this.loadSettings();
 
@@ -52,7 +52,7 @@ export default class AudioTranscriptionPlugin extends Plugin {
 	}
 
 	onunload() {
-		console.log('Unloading Audio Transcription Plugin');
+		console.debug('Unloading Audio Transcription Plugin');
 	}
 
 	async loadSettings() {

@@ -1,4 +1,3 @@
-import { Notice } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
 import { TranscriptionResult, TranscriptSegment } from '../services/TranscriptionService';
 import { Language } from '../settings';
@@ -8,6 +7,12 @@ import { spawn, ChildProcess } from 'child_process';
 import * as https from 'https';
 import { IncomingMessage } from 'http';
 import AdmZip from 'adm-zip';
+
+interface WhisperJsonSegment {
+	start: number;
+	end: number;
+	text: string;
+}
 
 export interface WhisperOptions {
 	modelPath: string;
@@ -27,7 +32,8 @@ export class LocalWhisperProcessor {
 
 		// Get the whisper.cpp binary path
 		const pluginDir = (this.plugin.app.vault.adapter as any).basePath;
-		const binDir = path.join(pluginDir, '.obsidian', 'plugins', 'obsidian-transcription-plugin', 'bin');
+		const configDir = this.plugin.app.vault.configDir;
+		const binDir = path.join(pluginDir, configDir, 'plugins', 'obsidian-transcription-plugin', 'bin');
 
 		// Use Windows binary for now
 		this.whisperBinaryPath = path.join(binDir, 'whisper.exe');
@@ -286,7 +292,7 @@ export class LocalWhisperProcessor {
 
 			this.currentProcess.stderr?.on('data', (data: Buffer) => {
 				stderr += data.toString();
-				console.log('Whisper stderr:', data.toString());
+				console.debug('Whisper stderr:', data.toString());
 			});
 
 			this.currentProcess.on('close', (code) => {
@@ -352,7 +358,7 @@ export class LocalWhisperProcessor {
 			const json = JSON.parse(jsonMatch[0]);
 
 			// Convert to our format
-			const segments: TranscriptSegment[] = (json.segments || []).map((seg: any) => ({
+			const segments: TranscriptSegment[] = (json.segments || []).map((seg: WhisperJsonSegment) => ({
 				start: seg.start || 0,
 				end: seg.end || 0,
 				text: seg.text || ''
@@ -397,7 +403,7 @@ export class LocalWhisperProcessor {
 		// Try each URL until one works
 		for (let i = 0; i < binaryUrls.length; i++) {
 			const binaryUrl = binaryUrls[i];
-			console.log(`Attempting download from: ${binaryUrl}`);
+			console.debug(`Attempting download from: ${binaryUrl}`);
 
 			try {
 				// Ensure bin directory exists
@@ -426,7 +432,7 @@ export class LocalWhisperProcessor {
 				if (onProgress) onProgress(100);
 
 				// Success!
-				console.log(`Successfully downloaded from: ${binaryUrl}`);
+				console.debug(`Successfully downloaded from: ${binaryUrl}`);
 				return;
 
 			} catch (error) {
@@ -527,7 +533,7 @@ export class LocalWhisperProcessor {
 				const zip = new AdmZip(zipPath);
 				const zipEntries = zip.getEntries();
 
-				console.log('Zip contents:', zipEntries.map(e => e.entryName));
+				console.debug('Zip contents:', zipEntries.map(e => e.entryName));
 
 				// Find whisper.exe or main.exe in the zip
 				let whisperEntry = zipEntries.find(entry =>
@@ -553,7 +559,7 @@ export class LocalWhisperProcessor {
 					// Extract files from the same directory as whisper.exe
 					// This includes the .exe and all .dll files
 					if (path.dirname(entry.entryName) === whisperDir && !entry.isDirectory) {
-						console.log('Extracting:', entry.entryName);
+						console.debug('Extracting:', entry.entryName);
 						zip.extractEntryTo(entry, destDir, false, true);
 					}
 				});
@@ -574,13 +580,13 @@ export class LocalWhisperProcessor {
 				}
 
 				const stats = fs.statSync(this.whisperBinaryPath);
-				console.log(`Whisper.exe extracted: ${stats.size} bytes`);
+				console.debug(`Whisper.exe extracted: ${stats.size} bytes`);
 
 				// Check for whisper.dll in the same directory (the actual library code)
 				const dllPath = path.join(destDir, 'whisper.dll');
 				if (fs.existsSync(dllPath)) {
 					const dllStats = fs.statSync(dllPath);
-					console.log(`whisper.dll found: ${dllStats.size} bytes`);
+					console.debug(`whisper.dll found: ${dllStats.size} bytes`);
 				}
 
 				// Size check: exe can be small (100KB+) when logic is in DLL
