@@ -188,7 +188,7 @@ export default class AudioTranscriptionPlugin extends Plugin {
 		if (this.settings.processingMode === 'local') {
 			const modelExists = this.modelManager.checkModelExists(this.settings.modelSize);
 			if (!modelExists) {
-				new Notice('Audio Transcription: No model found. Please download a model in settings.', 8000);
+				new Notice('Audio transcription: no model found. Please download a model in settings.', 8000);
 			}
 		}
 	}

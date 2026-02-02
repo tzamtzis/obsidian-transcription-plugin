@@ -153,9 +153,9 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 			.setName('Processing mode')
 			.setDesc('Choose where to process your audio files')
 			.addDropdown(dropdown => dropdown
-				.addOption('local', 'Local (Whisper.cpp) - Private, no internet needed')
-				.addOption('cloud-whisper', 'Cloud (OpenAI Whisper) - Faster, requires API key')
-				.addOption('cloud-openrouter', 'Cloud (OpenRouter) - Use custom models')
+				.addOption('local', 'Local (Whisper.cpp) - private, no internet needed')
+				.addOption('cloud-whisper', 'Cloud (OpenAI Whisper) - faster, requires API key')
+				.addOption('cloud-openrouter', 'Cloud (OpenRouter) - use custom models')
 				.setValue(this.plugin.settings.processingMode)
 				.onChange(async (value: ProcessingMode) => {
 					this.plugin.settings.processingMode = value;
@@ -169,11 +169,11 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 				.setName('Model size (local)')
 				.setDesc('Larger models are more accurate but slower. Medium recommended for Greek.')
 				.addDropdown(dropdown => dropdown
-					.addOption('tiny', 'Tiny (75 MB) - Very fast, basic accuracy')
-					.addOption('base', 'Base (142 MB) - Fast, good accuracy')
-					.addOption('small', 'Small (466 MB) - Moderate speed, very good accuracy')
-					.addOption('medium', 'Medium (1.5 GB) - Recommended, excellent accuracy')
-					.addOption('large', 'Large (2.9 GB) - Best accuracy, slower')
+					.addOption('tiny', 'Tiny (75 MB) - very fast, basic accuracy')
+					.addOption('base', 'Base (142 MB) - fast, good accuracy')
+					.addOption('small', 'Small (466 MB) - moderate speed, very good accuracy')
+					.addOption('medium', 'Medium (1.5 GB) - recommended, excellent accuracy')
+					.addOption('large', 'Large (2.9 GB) - best accuracy, slower')
 					.setValue(this.plugin.settings.modelSize)
 					.onChange(async (value: ModelSize) => {
 						this.plugin.settings.modelSize = value;
@@ -279,7 +279,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 			.setName('Custom analysis instructions')
 			.setDesc('Add extra instructions for the AI to follow when analyzing transcripts')
 			.addTextArea(text => {
-				text.setPlaceholder('Example: Focus on technical decisions and deadlines. Tag people using @name format.')
+				text.setPlaceholder('Example: focus on technical decisions and deadlines. Tag people using @name format.')
 					.setValue(this.plugin.settings.customInstructions)
 					.onChange(async (value) => {
 						this.plugin.settings.customInstructions = value;
@@ -386,9 +386,9 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 								new Notice(`Failed to download model: ${errorMessage}`, 8000);
 
 								if (errorMessage.includes('ENOSPC')) {
-									new Notice('Error: Not enough disk space. Please free up space and try again', 8000);
+									new Notice('Error: not enough disk space. Please free up space and try again.', 8000);
 								} else if (errorMessage.includes('EACCES')) {
-									new Notice('Error: Permission denied. Check folder permissions', 8000);
+									new Notice('Error: permission denied. Check folder permissions.', 8000);
 								}
 							}
 						} finally {
@@ -504,14 +504,14 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 			.setName('Ribbon icon')
 			.setDesc('Choose the icon displayed in the sidebar ribbon')
 			.addDropdown(dropdown => dropdown
-				.addOption('microphone', '🎤 Microphone')
-				.addOption('audio-file', '🎵 Audio file')
-				.addOption('headphones', '🎧 Headphones')
-				.addOption('mic', '🎙️ Mic')
-				.addOption('audio-lines', '🎚️ Audio lines')
-				.addOption('volume-2', '🔊 Volume')
-				.addOption('radio', '📻 Radio')
-				.addOption('podcast', '🎙️ Podcast')
+				.addOption('microphone', 'Microphone')
+				.addOption('audio-file', 'Audio file')
+				.addOption('headphones', 'Headphones')
+				.addOption('mic', 'Mic')
+				.addOption('audio-lines', 'Audio lines')
+				.addOption('volume-2', 'Volume')
+				.addOption('radio', 'Radio')
+				.addOption('podcast', 'Podcast')
 				.setValue(this.plugin.settings.ribbonIcon)
 				.onChange(async (value) => {
 					this.plugin.settings.ribbonIcon = value;
@@ -625,10 +625,10 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		const binaryExists = this.plugin.transcriptionService.localProcessor.checkBinaryExists();
 
 		if (binaryExists) {
-			setting.setDesc('✅ Binary installed and ready');
+			setting.setDesc('Binary installed and ready');
 			setting.descEl.addClass('audio-transcription-status-success');
 		} else {
-			setting.setDesc('❌ Binary not installed. Download it from model management section above.');
+			setting.setDesc('Binary not installed. Download it from Model management section above.');
 			setting.descEl.addClass('audio-transcription-status-error');
 		}
 
@@ -641,10 +641,10 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		const modelName = `${this.plugin.settings.modelSize}.bin`;
 
 		if (modelExists) {
-			modelSetting.setDesc(`✅ Model "${modelName}" is installed`);
+			modelSetting.setDesc(`Model "${modelName}" is installed`);
 			modelSetting.descEl.addClass('audio-transcription-status-success');
 		} else {
-			modelSetting.setDesc(`❌ Model "${modelName}" is not installed. Download it from model management section above.`);
+			modelSetting.setDesc(`Model "${modelName}" is not installed. Download it from Model management section above.`);
 			modelSetting.descEl.addClass('audio-transcription-status-error');
 		}
 	}
@@ -687,13 +687,13 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		let text = `System: ${totalMemoryGB} GB RAM, ${cpuCores} CPU cores. `;
 
 		if (current === recommended) {
-			text += `✅ "${current}" model is optimal for your system.`;
+			text += `The "${current}" model is optimal for your system.`;
 		} else {
 			const comparison = this.compareModelSize(current, recommended);
 			if (comparison > 0) {
-				text += `⚠️ "${current}" model may be slow. Consider "${recommended}" for better performance.`;
+				text += `The "${current}" model may be slow. Consider "${recommended}" for better performance.`;
 			} else {
-				text += `💡 Your system can handle "${recommended}" for better accuracy.`;
+				text += `Your system can handle "${recommended}" for better accuracy.`;
 			}
 		}
 
