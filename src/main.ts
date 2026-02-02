@@ -23,8 +23,12 @@ export default class AudioTranscriptionPlugin extends Plugin {
 		this.ribbonIconEl = this.addRibbonIcon(
 			this.settings.ribbonIcon,
 			'Transcribe audio file',
-			() => {
-				this.selectAndTranscribeAudioFile();
+			async () => {
+				try {
+					await this.selectAndTranscribeAudioFile();
+				} catch (e: any) {
+					new Notice(`Transcription error: ${e.message}`);
+				}
 			}
 		);
 
@@ -172,8 +176,8 @@ export default class AudioTranscriptionPlugin extends Plugin {
 	private hasTranscriptionContent(content: string): boolean {
 		// Check if the file contains transcription markers
 		return content.includes('## Full Transcription') ||
-		       content.includes('audio_file:') ||
-		       content.includes('transcribed_date:');
+			content.includes('audio_file:') ||
+			content.includes('transcribed_date:');
 	}
 
 	private async promptModelDownload(): Promise<boolean> {
