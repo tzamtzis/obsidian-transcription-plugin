@@ -1,4 +1,4 @@
-import { TFile, Notice } from 'obsidian';
+import { TFile, Notice, FileSystemAdapter } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
 import { LocalWhisperProcessor } from '../processors/LocalWhisperProcessor';
 import { CloudWhisperProcessor } from '../processors/CloudWhisperProcessor';
@@ -6,6 +6,7 @@ import { OpenRouterProcessor } from '../processors/OpenRouterProcessor';
 import { TranscriptionProgressModal } from '../ui/TranscriptionProgressModal';
 import { getAudioDuration, estimateTranscriptionTime, formatEstimatedTime } from '../utils/audio';
 import { Language, DateFormat } from '../settings';
+import * as path from 'path';
 
 export interface TranscriptionResult {
 	text: string;
@@ -50,7 +51,7 @@ export class TranscriptionService {
 
 	async transcribe(audioFile: TFile, shouldOverwrite: boolean = false, language?: Language, customInstructionsOverride?: string): Promise<void> {
 		// Get audio file path for duration estimation
-		const audioPath = (this.plugin.app.vault.adapter as any).getFullPath(audioFile.path);
+		const audioPath = this.getFullPath(audioFile.path);
 
 		// Get audio duration and show estimate
 		const audioDuration = await getAudioDuration(audioPath);
@@ -175,15 +176,14 @@ export class TranscriptionService {
 		// Validate based on processing mode
 		if (processingMode === 'local') {
 			// Check if whisper.cpp binary exists
-			const binaryExists = await this.localProcessor.checkBinaryExists();
+			const binaryExists = this.localProcessor.checkBinaryExists();
 			if (!binaryExists) {
 				throw new Error('Whisper.cpp binary not found.\n\n' +
 					'Solution: Go to Settings → Audio Transcription → Download Whisper.cpp binary');
 			}
 
 			// Check if model is downloaded
-			const modelPath = this.plugin.modelManager.getModelPath(this.plugin.settings.modelSize);
-			const modelExists = await this.plugin.modelManager.checkModelExists(this.plugin.settings.modelSize);
+			const modelExists = this.plugin.modelManager.checkModelExists(this.plugin.settings.modelSize);
 			if (!modelExists) {
 				throw new Error(`Model "${this.plugin.settings.modelSize}" not found.\n\n` +
 					'Solution: Go to Settings → Audio Transcription → Download Model');
@@ -322,7 +322,7 @@ export class TranscriptionService {
 
 	private async transcribeLocal(audioFile: TFile, language?: Language): Promise<TranscriptionResult> {
 		// Get the audio file path
-		const audioPath = (this.plugin.app.vault.adapter as any).getFullPath(audioFile.path);
+		const audioPath = this.getFullPath(audioFile.path);
 
 		// Use LocalWhisperProcessor
 		return await this.localProcessor.transcribe(audioPath, (progress, message) => {
@@ -333,7 +333,7 @@ export class TranscriptionService {
 
 	private async transcribeCloudWhisper(audioFile: TFile, language?: Language): Promise<TranscriptionResult> {
 		// Get the audio file path
-		const audioPath = (this.plugin.app.vault.adapter as any).getFullPath(audioFile.path);
+		const audioPath = this.getFullPath(audioFile.path);
 
 		// Use CloudWhisperProcessor
 		return await this.cloudWhisperProcessor.transcribe(audioPath, (progress, message) => {
@@ -341,7 +341,7 @@ export class TranscriptionService {
 		}, language);
 	}
 
-	private async transcribeCloudOpenRouter(audioFile: TFile, language?: Language): Promise<TranscriptionResult> {
+	private transcribeCloudOpenRouter(_audioFile: TFile, _language?: Language): never {
 		// OpenRouter doesn't support direct transcription
 		// Use OpenAI Whisper instead for now
 		throw new Error('OpenRouter transcription not supported. Please use "Cloud (OpenAI Whisper)" or "Local" mode for transcription.');
@@ -630,6 +630,14 @@ ${transcriptText}
 		this.localProcessor.cancel();
 		this.cloudWhisperProcessor.cancel();
 		this.openRouterProcessor.cancel();
+	}
+
+private getFullPath(relativePath: string): string {
+		const adapter = this.plugin.app.vault.adapter;
+		if (adapter instanceof FileSystemAdapter) {
+			return adapter.getFullPath(relativePath);
+		}
+		throw new Error('FileSystemAdapter required for local file operations');
 	}
 
 	getProgress(): number {

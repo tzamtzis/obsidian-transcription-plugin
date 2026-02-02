@@ -12,11 +12,11 @@ export class ManualDownloadInstructionsModal extends Modal {
 		contentEl.addClass('manual-download-modal');
 
 		// Title
-		contentEl.createEl('h2', { text: '⚠️ Automatic Download Failed' });
+		contentEl.createEl('h2', { text: '⚠️ Automatic download failed' });
 
 		// Error explanation
 		const errorSection = contentEl.createDiv({ cls: 'download-error-section' });
-		errorSection.createEl('h3', { text: 'What went wrong?' });
+		errorSection.createEl('h3', { text: 'What went wrong' });
 		errorSection.createEl('p', {
 			text: 'Both download attempts failed. This is usually caused by:',
 			cls: 'error-intro'
@@ -30,7 +30,7 @@ export class ManualDownloadInstructionsModal extends Modal {
 
 		// Manual instructions
 		const instructionsSection = contentEl.createDiv({ cls: 'download-instructions-section' });
-		instructionsSection.createEl('h3', { text: '📥 Manual Download Instructions' });
+		instructionsSection.createEl('h3', { text: '📥 Manual download instructions' });
 
 		const steps = instructionsSection.createEl('ol', { cls: 'instruction-steps' });
 
@@ -54,7 +54,7 @@ export class ManualDownloadInstructionsModal extends Modal {
 		const step2 = steps.createEl('li');
 		step2.createEl('strong', { text: 'Save the file as:' });
 		step2.createEl('br');
-		const fileName = step2.createEl('code', { text: `ggml-${this.modelSize}.bin`, cls: 'filename' });
+		step2.createEl('code', { text: `ggml-${this.modelSize}.bin`, cls: 'filename' });
 		const copyFileBtn = step2.createEl('button', { text: '📋 Copy', cls: 'copy-button' });
 		copyFileBtn.onclick = () => {
 			navigator.clipboard.writeText(`ggml-${this.modelSize}.bin`);
@@ -65,7 +65,7 @@ export class ManualDownloadInstructionsModal extends Modal {
 		const step3 = steps.createEl('li');
 		step3.createEl('strong', { text: 'Copy the file to this folder:' });
 		step3.createEl('br');
-		const pathCode = step3.createEl('code', { text: this.modelsDir, cls: 'filepath' });
+		step3.createEl('code', { text: this.modelsDir, cls: 'filepath' });
 		const copyPathBtn = step3.createEl('button', { text: '📋 Copy Path', cls: 'copy-button' });
 		copyPathBtn.onclick = () => {
 			navigator.clipboard.writeText(this.modelsDir);
@@ -97,124 +97,11 @@ export class ManualDownloadInstructionsModal extends Modal {
 			.setButtonText('Close')
 			.setCta()
 			.onClick(() => this.close());
-
-		// Add styles
-		this.addStyles();
 	}
 
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();
-	}
-
-	private addStyles() {
-		const style = document.createElement('style');
-		style.textContent = `
-			.manual-download-modal {
-				max-width: 700px;
-			}
-
-			.download-error-section,
-			.download-instructions-section,
-			.troubleshooting-section {
-				margin: 1.5em 0;
-				padding: 1em;
-				background-color: var(--background-secondary);
-				border-radius: 8px;
-			}
-
-			.download-error-section {
-				border-left: 4px solid var(--text-error);
-			}
-
-			.download-instructions-section {
-				border-left: 4px solid var(--interactive-accent);
-			}
-
-			.error-intro {
-				margin-bottom: 0.5em;
-				font-weight: 500;
-			}
-
-			.causes-list,
-			.instruction-steps {
-				margin-left: 1.5em;
-				line-height: 1.8;
-			}
-
-			.causes-list li {
-				margin: 0.5em 0;
-			}
-
-			.instruction-steps li {
-				margin: 1.5em 0;
-			}
-
-			.download-link {
-				color: var(--interactive-accent);
-				word-break: break-all;
-				text-decoration: underline;
-			}
-
-			.filename,
-			.filepath {
-				display: inline-block;
-				background-color: var(--background-primary);
-				padding: 0.4em 0.6em;
-				border-radius: 4px;
-				font-family: monospace;
-				font-size: 0.9em;
-				margin: 0.5em 0;
-			}
-
-			.filepath {
-				display: block;
-				word-break: break-all;
-				margin: 0.5em 0;
-			}
-
-			.copy-button,
-			.open-folder-button {
-				margin-left: 0.5em;
-				padding: 0.3em 0.8em;
-				font-size: 0.85em;
-				cursor: pointer;
-				border: 1px solid var(--background-modifier-border);
-				background-color: var(--background-secondary);
-				color: var(--text-normal);
-				border-radius: 4px;
-			}
-
-			.copy-button:hover,
-			.open-folder-button:hover {
-				background-color: var(--background-modifier-hover);
-			}
-
-			.open-folder-button {
-				display: block;
-				margin-top: 0.5em;
-				margin-left: 0;
-			}
-
-			.modal-button-container {
-				display: flex;
-				justify-content: center;
-				margin-top: 2em;
-			}
-
-			.troubleshooting-section {
-				border-left: 4px solid var(--text-warning);
-			}
-
-			.troubleshooting-section ul {
-				margin-left: 1.5em;
-			}
-
-			.troubleshooting-section li {
-				margin: 0.5em 0;
-			}
-		`;
-		this.contentEl.appendChild(style);
 	}
 }
 
@@ -234,7 +121,7 @@ export class ModelDownloadModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl('h2', { text: `Downloading ${this.modelName} Model` });
+		contentEl.createEl('h2', { text: `Downloading ${this.modelName} model` });
 
 		// Status text
 		this.statusText = contentEl.createDiv({ cls: 'model-download-status' });
@@ -248,7 +135,7 @@ export class ModelDownloadModal extends Modal {
 
 		// Progress bar fill
 		this.progressBar = progressBg.createDiv({ cls: 'model-download-progress-bar' });
-		this.progressBar.style.width = '0%';
+		this.progressBar.style.setProperty('--progress-width', '0%');
 
 		// Progress text
 		this.progressText = contentEl.createDiv({ cls: 'model-download-progress-text' });
@@ -272,8 +159,6 @@ export class ModelDownloadModal extends Modal {
 				this.close();
 			});
 
-		// Add CSS styles
-		this.addStyles();
 	}
 
 	onClose() {
@@ -288,7 +173,7 @@ export class ModelDownloadModal extends Modal {
 		const downloadedMB = Math.round(downloaded / (1024 * 1024));
 		const totalMB = Math.round(total / (1024 * 1024));
 
-		this.progressBar.style.width = `${percentage}%`;
+		this.progressBar.style.setProperty('--progress-width', `${percentage}%`);
 		this.progressText.setText(`${downloadedMB} MB / ${totalMB} MB (${Math.round(percentage)}%)`);
 
 		// Update status
@@ -309,7 +194,7 @@ export class ModelDownloadModal extends Modal {
 	}
 
 	setComplete() {
-		this.progressBar.style.width = '100%';
+		this.progressBar.style.setProperty('--progress-width', '100%');
 		this.statusText.setText('✓ Download complete!');
 		this.statusText.addClass('model-download-status-success');
 		this.cancelButton.setButtonText('Close');
@@ -321,57 +206,6 @@ export class ModelDownloadModal extends Modal {
 
 	isCancelled(): boolean {
 		return this.cancelled;
-	}
-
-	private addStyles() {
-		// Add inline styles for the modal
-		const style = document.createElement('style');
-		style.textContent = `
-			.model-download-status {
-				margin: 1em 0;
-				font-weight: 500;
-				text-align: center;
-			}
-
-			.model-download-progress-container {
-				margin: 1.5em 0;
-			}
-
-			.model-download-progress-bg {
-				background-color: var(--background-modifier-border);
-				border-radius: 4px;
-				height: 24px;
-				overflow: hidden;
-			}
-
-			.model-download-progress-bar {
-				background-color: var(--interactive-accent);
-				height: 100%;
-				transition: width 0.3s ease;
-				border-radius: 4px;
-			}
-
-			.model-download-progress-text {
-				margin-top: 0.5em;
-				text-align: center;
-				font-family: monospace;
-				font-size: 0.9em;
-			}
-
-			.model-download-info {
-				color: var(--text-muted);
-				font-size: 0.9em;
-				text-align: center;
-				margin: 1em 0;
-			}
-
-			.model-download-buttons {
-				display: flex;
-				justify-content: center;
-				margin-top: 1.5em;
-			}
-		`;
-		this.contentEl.appendChild(style);
 	}
 }
 
@@ -391,7 +225,7 @@ export class OverwriteConfirmationModal extends Modal {
 		contentEl.addClass('overwrite-confirmation-modal');
 
 		// Title
-		contentEl.createEl('h2', { text: 'Transcription Already Exists' });
+		contentEl.createEl('h2', { text: 'Transcription already exists' });
 
 		// Message
 		const messageDiv = contentEl.createDiv({ cls: 'overwrite-message' });
@@ -436,8 +270,6 @@ export class OverwriteConfirmationModal extends Modal {
 				this.close();
 			});
 
-		// Add styles
-		this.addStyles();
 	}
 
 	onClose() {
@@ -452,57 +284,6 @@ export class OverwriteConfirmationModal extends Modal {
 
 	setConfirmCallback(callback: (overwrite: boolean) => void) {
 		this.onConfirm = callback;
-	}
-
-	private addStyles() {
-		const style = document.createElement('style');
-		style.textContent = `
-			.overwrite-confirmation-modal {
-				max-width: 500px;
-			}
-
-			.overwrite-message {
-				margin: 1.5em 0;
-				line-height: 1.6;
-			}
-
-			.overwrite-message p {
-				margin: 0.8em 0;
-			}
-
-			.filename-display {
-				display: block;
-				background-color: var(--background-secondary);
-				padding: 0.5em 0.8em;
-				border-radius: 4px;
-				font-family: monospace;
-				font-size: 0.9em;
-				margin: 1em 0;
-				word-break: break-all;
-			}
-
-			.overwrite-warning {
-				background-color: var(--background-secondary);
-				border-left: 4px solid var(--text-warning);
-				padding: 1em;
-				border-radius: 4px;
-				margin: 1em 0;
-			}
-
-			.overwrite-warning p {
-				margin: 0;
-				color: var(--text-warning);
-				font-size: 0.9em;
-			}
-
-			.overwrite-buttons {
-				display: flex;
-				justify-content: center;
-				gap: 1em;
-				margin-top: 2em;
-			}
-		`;
-		this.contentEl.appendChild(style);
 	}
 }
 
@@ -529,7 +310,7 @@ export class LanguageSelectionModal extends Modal {
 		contentEl.addClass('language-selection-modal');
 
 		// Title
-		contentEl.createEl('h2', { text: 'Select Transcription Language' });
+		contentEl.createEl('h2', { text: 'Select transcription language' });
 
 		// Message
 		const messageDiv = contentEl.createDiv({ cls: 'language-selection-message' });
@@ -613,7 +394,7 @@ export class LanguageSelectionModal extends Modal {
 		const buttonContainer = contentEl.createDiv({ cls: 'language-selection-buttons' });
 
 		new ButtonComponent(buttonContainer)
-			.setButtonText('Start Transcription')
+			.setButtonText('Start transcription')
 			.setCta()
 			.onClick(() => {
 				this.confirmed = true;
@@ -637,8 +418,6 @@ export class LanguageSelectionModal extends Modal {
 				this.close();
 			});
 
-		// Add styles
-		this.addStyles();
 	}
 
 	onClose() {
@@ -657,178 +436,6 @@ export class LanguageSelectionModal extends Modal {
 
 	setCancelCallback(callback: () => void) {
 		this.onCancel = callback;
-	}
-
-	private addStyles() {
-		const style = document.createElement('style');
-		style.textContent = `
-			.language-selection-modal {
-				max-width: 500px;
-			}
-
-			.language-selection-message {
-				margin: 1em 0 1.5em 0;
-			}
-
-			.language-selection-message p {
-				margin: 0;
-				font-size: 14px;
-			}
-
-			.language-options-container {
-				max-height: 400px;
-				overflow-y: auto;
-				margin-bottom: 1em;
-				padding: 8px;
-				background-color: var(--background-secondary);
-				border-radius: 4px;
-			}
-
-			.language-option {
-				padding: 12px;
-				margin: 4px 0;
-				background-color: var(--background-primary);
-				border: 2px solid transparent;
-				border-radius: 4px;
-				cursor: pointer;
-				transition: all 0.2s ease;
-			}
-
-			.language-option:hover {
-				background-color: var(--background-modifier-hover);
-				border-color: var(--interactive-accent-hover);
-			}
-
-			.language-option.selected {
-				background-color: var(--interactive-accent);
-				border-color: var(--interactive-accent);
-				color: var(--text-on-accent);
-			}
-
-			.language-option label {
-				display: flex;
-				align-items: center;
-				gap: 10px;
-				cursor: pointer;
-				font-size: 14px;
-				width: 100%;
-			}
-
-			.language-option input[type="radio"] {
-				cursor: pointer;
-				width: 18px;
-				height: 18px;
-			}
-
-			.language-option.selected label {
-				color: var(--text-on-accent);
-				font-weight: 500;
-			}
-
-			.language-selection-info {
-				background-color: var(--background-secondary);
-				padding: 12px;
-				border-radius: 4px;
-				margin: 1em 0;
-			}
-
-			.language-selection-info p {
-				margin: 0;
-				font-size: 13px;
-				color: var(--text-muted);
-			}
-
-			.language-selection-buttons {
-				display: flex;
-				justify-content: center;
-				gap: 1em;
-				margin-top: 1.5em;
-			}
-
-			.language-selection-advanced {
-				margin: 1.5em 0;
-				padding: 0;
-				border: 1px solid var(--background-modifier-border);
-				border-radius: 4px;
-				background-color: var(--background-secondary);
-			}
-
-			.language-selection-advanced-summary {
-				padding: 12px;
-				cursor: pointer;
-				user-select: none;
-				font-size: 14px;
-				font-weight: 500;
-				color: var(--text-muted);
-				list-style: none;
-			}
-
-			.language-selection-advanced-summary::-webkit-details-marker {
-				display: none;
-			}
-
-			.language-selection-advanced-summary:hover {
-				color: var(--text-normal);
-				background-color: var(--background-modifier-hover);
-			}
-
-			.language-selection-advanced[open] .language-selection-advanced-summary {
-				border-bottom: 1px solid var(--background-modifier-border);
-				color: var(--text-normal);
-			}
-
-			.language-selection-advanced-content {
-				padding: 12px;
-			}
-
-			.advanced-description {
-				margin: 0 0 12px 0;
-				font-size: 13px;
-				color: var(--text-muted);
-			}
-
-			.custom-instructions-textarea {
-				width: 100%;
-				min-height: 100px;
-				padding: 8px;
-				border: 1px solid var(--background-modifier-border);
-				border-radius: 4px;
-				background-color: var(--background-primary);
-				color: var(--text-normal);
-				font-family: var(--font-text);
-				font-size: 13px;
-				resize: vertical;
-			}
-
-			.custom-instructions-textarea:focus {
-				outline: none;
-				border-color: var(--interactive-accent);
-			}
-
-			.default-instructions-note {
-				margin-top: 12px;
-				padding: 8px;
-				background-color: var(--background-primary);
-				border-radius: 4px;
-				border-left: 3px solid var(--interactive-accent);
-			}
-
-			.default-instructions-label {
-				margin: 0 0 6px 0;
-				font-size: 12px;
-				font-weight: 500;
-				color: var(--text-muted);
-			}
-
-			.default-instructions-text {
-				font-size: 12px;
-				color: var(--text-muted);
-				font-style: italic;
-				white-space: pre-wrap;
-				word-break: break-word;
-			}
-		`;
-		this.contentEl.appendChild(style);
 	}
 }
 

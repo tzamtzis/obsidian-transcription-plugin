@@ -21,11 +21,8 @@ export class TranscriptionProgressModal extends Modal {
 		contentEl.empty();
 		contentEl.addClass('transcription-progress-modal');
 
-		// Add styles
-		this.addStyles();
-
 		// Title
-		contentEl.createEl('h2', { text: 'Transcribing Audio' });
+		contentEl.createEl('h2', { text: 'Transcribing audio' });
 
 		// Status text
 		this.statusText = contentEl.createDiv({ cls: 'progress-status' });
@@ -66,8 +63,8 @@ export class TranscriptionProgressModal extends Modal {
 		const statusMessage = message || this.getStepMessage(step);
 		this.statusText.setText(statusMessage);
 
-		// Update progress bar
-		this.progressFill.style.width = `${this.currentProgress}%`;
+		// Update progress bar using CSS custom property
+		this.progressFill.style.setProperty('--progress-width', `${this.currentProgress}%`);
 
 		// Update percentage
 		this.percentText.setText(`${Math.round(this.currentProgress)}%`);
@@ -141,93 +138,5 @@ export class TranscriptionProgressModal extends Modal {
 
 	isCancelled(): boolean {
 		return this.cancelled;
-	}
-
-	private addStyles() {
-		const style = document.createElement('style');
-		style.textContent = `
-			.transcription-progress-modal {
-				padding: 20px;
-				min-width: 400px;
-			}
-
-			.transcription-progress-modal h2 {
-				margin-top: 0;
-				margin-bottom: 20px;
-				text-align: center;
-			}
-
-			.progress-status {
-				font-size: 14px;
-				margin-bottom: 15px;
-				text-align: center;
-				min-height: 20px;
-				color: var(--text-muted);
-			}
-
-			.progress-container {
-				margin-bottom: 10px;
-			}
-
-			.progress-bar {
-				width: 100%;
-				height: 24px;
-				background-color: var(--background-modifier-border);
-				border-radius: 12px;
-				overflow: hidden;
-				position: relative;
-			}
-
-			.progress-fill {
-				height: 100%;
-				background-color: var(--interactive-accent);
-				transition: width 0.3s ease, background-color 0.3s ease;
-				border-radius: 12px;
-			}
-
-			.progress-validation {
-				background-color: #3b82f6;
-			}
-
-			.progress-transcription {
-				background-color: #8b5cf6;
-			}
-
-			.progress-analysis {
-				background-color: #06b6d4;
-			}
-
-			.progress-saving {
-				background-color: #10b981;
-			}
-
-			.progress-complete {
-				background-color: #22c55e;
-			}
-
-			.progress-error {
-				background-color: #ef4444;
-			}
-
-			.progress-percent {
-				text-align: center;
-				margin-top: 8px;
-				margin-bottom: 20px;
-				font-weight: 600;
-				color: var(--text-normal);
-			}
-
-			.button-container {
-				display: flex;
-				justify-content: center;
-				margin-top: 20px;
-			}
-
-			.button-container button {
-				padding: 8px 24px;
-			}
-		`;
-
-		document.head.appendChild(style);
 	}
 }

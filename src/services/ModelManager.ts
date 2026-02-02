@@ -1,4 +1,4 @@
-import { Notice } from 'obsidian';
+import { Notice, FileSystemAdapter } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
 import { ModelSize } from '../settings';
 import { ModelDownloadModal } from '../ui/TranscriptionModal';
@@ -6,6 +6,12 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
 import { IncomingMessage, ClientRequest } from 'http';
+
+interface NodeError extends Error {
+	code?: string;
+	errno?: number;
+	syscall?: string;
+}
 
 export interface ModelInfo {
 	size: ModelSize;
@@ -29,7 +35,11 @@ export class ModelManager {
 	constructor(plugin: AudioTranscriptionPlugin) {
 		this.plugin = plugin;
 		// Use plugin's data directory for models
-		const pluginDir = (this.plugin.app.vault.adapter as any).basePath;
+		const adapter = this.plugin.app.vault.adapter;
+		if (!(adapter instanceof FileSystemAdapter)) {
+			throw new Error('FileSystemAdapter required for model management');
+		}
+		const pluginDir = adapter.getBasePath();
 		const configDir = this.plugin.app.vault.configDir;
 		this.modelsDir = path.join(pluginDir, configDir, 'plugins', 'obsidian-transcription-plugin', 'models');
 		this.ensureModelsDirectory();
@@ -41,7 +51,7 @@ export class ModelManager {
 		}
 	}
 
-	async checkModelExists(modelSize: ModelSize): Promise<boolean> {
+	checkModelExists(modelSize: ModelSize): boolean {
 		const modelPath = this.getModelPath(modelSize);
 		return fs.existsSync(modelPath);
 	}
@@ -204,7 +214,7 @@ export class ModelManager {
 			}
 
 			// Log detailed error information
-			const err = error as Error & { code?: string; errno?: number; syscall?: string };
+			const err = error as NodeError;
 			console.error('Failed to download model:', {
 				error: err,
 				message: err.message,
@@ -272,11 +282,11 @@ export class ModelManager {
 				resolve(true);
 			});
 
-			request.on('error', (error) => {
+			request.on('error', (error: NodeError) => {
 				console.error('Connection test failed:', {
 					hostname: urlObj.hostname,
 					error: error.message,
-					code: (error as any).code
+					code: error.code
 				});
 				resolve(false);
 			});
@@ -363,10 +373,10 @@ export class ModelManager {
 						resolve();
 					});
 
-					fileStream.on('error', (error) => {
+					fileStream.on('error', (error: NodeError) => {
 						console.error('File stream error during download:', {
 							error: error.message,
-							code: (error as any).code,
+							code: error.code,
 							downloadedSize,
 							totalSize
 						});
@@ -386,10 +396,10 @@ export class ModelManager {
 						reject(error);
 					});
 
-					response.on('error', (error) => {
+					response.on('error', (error: NodeError) => {
 						console.error('Response stream error during download:', {
 							error: error.message,
-							code: (error as any).code,
+							code: error.code,
 							downloadedSize,
 							totalSize
 						});
@@ -406,10 +416,10 @@ export class ModelManager {
 					});
 				});
 
-				request.on('error', (error) => {
+				request.on('error', (error: NodeError) => {
 					console.error('Request error during download:', {
 						error: error.message,
-						code: (error as any).code,
+						code: error.code,
 						url: currentUrl
 					});
 					// Clean up timeouts
@@ -463,7 +473,7 @@ export class ModelManager {
 		return this.modelsDir;
 	}
 
-	async validateModel(modelSize: ModelSize): Promise<boolean> {
+	validateModel(modelSize: ModelSize): boolean {
 		const modelPath = this.getModelPath(modelSize);
 
 		if (!fs.existsSync(modelPath)) {

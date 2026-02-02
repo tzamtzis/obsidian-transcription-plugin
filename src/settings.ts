@@ -140,16 +140,14 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	async display(): Promise<void> {
+	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-
-		new Setting(containerEl).setName('Audio Transcription Settings').setHeading();
 
 		// ========================================
 		// TRANSCRIPTION SETTINGS
 		// ========================================
-		new Setting(containerEl).setName('Transcription Settings').setHeading();
+		new Setting(containerEl).setName('Transcription').setHeading();
 
 		new Setting(containerEl)
 			.setName('Processing mode')
@@ -190,7 +188,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Favorite languages')
-			.setDesc('Select the languages you commonly transcribe. You will be asked to choose from these before each transcription.')
+			.setDesc('Select the languages you commonly transcribe. You will be asked to choose from these before each transcription')
 			.setClass('favorite-languages-setting');
 
 		// Create checkboxes for all languages
@@ -238,7 +236,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 			// Info about diarization status
 			const infoDiv = containerEl.createDiv({ cls: 'setting-item-description audio-transcription-diarization-info' });
 
-			const title = infoDiv.createEl('strong', { text: 'ℹ️ Speaker Diarization Status:' });
+			infoDiv.createEl('strong', { text: 'Speaker diarization status' });
 
 			const infoText = infoDiv.createSpan({ cls: 'text-muted' });
 			infoText.createSpan({ text: 'Currently, the plugin structure supports speaker labels, but automatic speaker detection is not yet implemented.' });
@@ -270,7 +268,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// ========================================
 		// ANALYSIS SETTINGS
 		// ========================================
-		new Setting(containerEl).setName('Analysis Settings').setHeading();
+		new Setting(containerEl).setName('Analysis').setHeading();
 
 		containerEl.createEl('p', {
 			text: 'Analysis uses OpenRouter to extract summaries, key points, and action items from transcriptions.',
@@ -293,7 +291,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// ========================================
 		// API KEYS
 		// ========================================
-		new Setting(containerEl).setName('API Keys (for cloud processing)').setHeading();
+		new Setting(containerEl).setName('API keys (for cloud processing)').setHeading();
 
 		if (this.plugin.settings.processingMode === 'cloud-whisper') {
 			new Setting(containerEl)
@@ -339,7 +337,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// MODEL MANAGEMENT
 		// ========================================
 		if (this.plugin.settings.processingMode === 'local') {
-			new Setting(containerEl).setName('Model Management').setHeading();
+			new Setting(containerEl).setName('Model management').setHeading();
 
 			const modelInfo = containerEl.createDiv();
 			modelInfo.createEl('p', { text: 'Local models path: ./models/' });
@@ -428,7 +426,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// ========================================
 		// OUTPUT SETTINGS
 		// ========================================
-		new Setting(containerEl).setName('Output Settings').setHeading();
+		new Setting(containerEl).setName('Output').setHeading();
 
 		new Setting(containerEl)
 			.setName('Output folder')
@@ -500,7 +498,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// ========================================
 		// UI SETTINGS
 		// ========================================
-		new Setting(containerEl).setName('UI Settings').setHeading();
+		new Setting(containerEl).setName('Appearance').setHeading();
 
 		new Setting(containerEl)
 			.setName('Ribbon icon')
@@ -524,7 +522,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// ========================================
 		// RECENT TRANSCRIPTIONS
 		// ========================================
-		new Setting(containerEl).setName('Recent Transcriptions').setHeading();
+		new Setting(containerEl).setName('Recent transcriptions').setHeading();
 
 		if (this.plugin.settings.recentTranscriptions.length === 0) {
 			containerEl.createEl('p', {
@@ -576,18 +574,18 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		// STATUS INFORMATION
 		// ========================================
 		if (this.plugin.settings.processingMode === 'local') {
-			new Setting(containerEl).setName('System Status').setHeading();
+			new Setting(containerEl).setName('System status').setHeading();
 
 			// Binary status
 			const binaryStatusDiv = containerEl.createDiv({ cls: 'status-section' });
-			await this.displayBinaryStatus(binaryStatusDiv);
+			this.displayBinaryStatus(binaryStatusDiv);
 
 			// Add some spacing
 			containerEl.createEl('div', { cls: 'setting-item-separator' });
 		}
 	}
 
-	private async displayModelStatus(containerEl: HTMLElement) {
+	private displayModelStatus(containerEl: HTMLElement): void {
 		const models: ModelSize[] = ['tiny', 'base', 'small', 'medium', 'large'];
 		const modelSizes = {
 			tiny: '75 MB',
@@ -603,7 +601,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		const list = containerEl.createEl('ul', { cls: 'audio-transcription-model-list' });
 
 		for (const model of models) {
-			const exists = await this.plugin.modelManager.checkModelExists(model);
+			const exists = this.plugin.modelManager.checkModelExists(model);
 			const selected = model === this.plugin.settings.modelSize;
 
 			const itemCls = selected ? 'audio-transcription-model-item selected' : 'audio-transcription-model-item';
@@ -616,37 +614,37 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		}
 	}
 
-	private async displayBinaryStatus(containerEl: HTMLElement) {
+	private displayBinaryStatus(containerEl: HTMLElement): void {
 		containerEl.empty();
 
 		const setting = new Setting(containerEl)
-			.setName('Whisper.cpp Binary')
+			.setName('Whisper.cpp binary')
 			.setDesc('Status of the local transcription binary');
 
 		// Check if binary exists
-		const binaryExists = await this.plugin.transcriptionService.localProcessor.checkBinaryExists();
+		const binaryExists = this.plugin.transcriptionService.localProcessor.checkBinaryExists();
 
 		if (binaryExists) {
 			setting.setDesc('✅ Binary installed and ready');
 			setting.descEl.addClass('audio-transcription-status-success');
 		} else {
-			setting.setDesc('❌ Binary not installed. Download it from Model Management section above.');
+			setting.setDesc('❌ Binary not installed. Download it from model management section above.');
 			setting.descEl.addClass('audio-transcription-status-error');
 		}
 
 		// Add current model status
 		const modelSetting = new Setting(containerEl)
-			.setName('Selected Model')
+			.setName('Selected model')
 			.setDesc('Status of the currently selected Whisper model');
 
-		const modelExists = await this.plugin.modelManager.checkModelExists(this.plugin.settings.modelSize);
+		const modelExists = this.plugin.modelManager.checkModelExists(this.plugin.settings.modelSize);
 		const modelName = `${this.plugin.settings.modelSize}.bin`;
 
 		if (modelExists) {
 			modelSetting.setDesc(`✅ Model "${modelName}" is installed`);
 			modelSetting.descEl.addClass('audio-transcription-status-success');
 		} else {
-			modelSetting.setDesc(`❌ Model "${modelName}" is not installed. Download it from Model Management section above.`);
+			modelSetting.setDesc(`❌ Model "${modelName}" is not installed. Download it from model management section above.`);
 			modelSetting.descEl.addClass('audio-transcription-status-error');
 		}
 	}

@@ -10,13 +10,12 @@ export class OpenRouterProcessor {
 		this.plugin = plugin;
 	}
 
-	async transcribe(
-		audioPath: string,
-		onProgress?: (progress: number, message: string) => void
-	): Promise<TranscriptionResult> {
+	transcribe(
+		_audioPath: string,
+		_onProgress?: (progress: number, message: string) => void
+	): never {
 		// Note: OpenRouter doesn't provide direct audio transcription
 		// This would require using OpenAI Whisper through OpenRouter
-		// For now, we'll throw an error
 		throw new Error('OpenRouter direct transcription not supported. Use OpenRouter for analysis only, or use OpenAI Whisper for transcription.');
 	}
 

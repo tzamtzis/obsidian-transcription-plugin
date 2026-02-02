@@ -1,3 +1,4 @@
+import { FileSystemAdapter } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
 import { TranscriptionResult, TranscriptSegment } from '../services/TranscriptionService';
 import { Language } from '../settings';
@@ -31,7 +32,11 @@ export class LocalWhisperProcessor {
 		this.plugin = plugin;
 
 		// Get the whisper.cpp binary path
-		const pluginDir = (this.plugin.app.vault.adapter as any).basePath;
+		const adapter = this.plugin.app.vault.adapter;
+		if (!(adapter instanceof FileSystemAdapter)) {
+			throw new Error('FileSystemAdapter required for local processing');
+		}
+		const pluginDir = adapter.getBasePath();
 		const configDir = this.plugin.app.vault.configDir;
 		const binDir = path.join(pluginDir, configDir, 'plugins', 'obsidian-transcription-plugin', 'bin');
 
@@ -48,7 +53,7 @@ export class LocalWhisperProcessor {
 		}
 	}
 
-	async checkBinaryExists(): Promise<boolean> {
+	checkBinaryExists(): boolean {
 		return fs.existsSync(this.whisperBinaryPath);
 	}
 
@@ -58,7 +63,7 @@ export class LocalWhisperProcessor {
 		language?: Language
 	): Promise<TranscriptionResult> {
 		// Check if binary exists
-		if (!await this.checkBinaryExists()) {
+		if (!this.checkBinaryExists()) {
 			throw new Error('Whisper.cpp binary not found. Please download it from settings.');
 		}
 
