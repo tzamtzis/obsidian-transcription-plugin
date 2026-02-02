@@ -75,11 +75,11 @@ export class TranscriptionProgressModal extends Modal {
 
 	private getStepMessage(step: string): string {
 		const messages: Record<string, string> = {
-			'validation': '🔍 Validating configuration...',
-			'transcription': '🎙️ Transcribing audio...',
-			'analysis': '🤖 Analyzing content...',
-			'saving': '💾 Creating markdown file...',
-			'complete': '✅ Transcription complete!'
+			'validation': 'Validating configuration...',
+			'transcription': 'Transcribing audio...',
+			'analysis': 'Analyzing content...',
+			'saving': 'Creating markdown file...',
+			'complete': 'Transcription complete!'
 		};
 		return messages[step] || `Processing: ${step}`;
 	}
@@ -107,7 +107,7 @@ export class TranscriptionProgressModal extends Modal {
 		if (this.cancelled) return;
 
 		this.cancelled = true;
-		this.statusText.setText('⚠️ Cancelling transcription...');
+		this.statusText.setText('Cancelling transcription...');
 		this.cancelButton.disabled = true;
 		this.cancelButton.setText('Cancelling...');
 
@@ -117,7 +117,7 @@ export class TranscriptionProgressModal extends Modal {
 	}
 
 	markComplete() {
-		this.updateProgress('complete', 100, '✅ Transcription complete!');
+		this.updateProgress('complete', 100, 'Transcription complete!');
 		this.cancelButton.addClass('audio-transcription-hidden');
 
 		// Auto-close after 2 seconds
@@ -127,7 +127,7 @@ export class TranscriptionProgressModal extends Modal {
 	}
 
 	markError(errorMessage: string) {
-		this.statusText.setText(`❌ ${errorMessage}`);
+		this.statusText.setText(errorMessage);
 		this.progressFill.addClass('progress-error');
 		this.cancelButton.setText('Close');
 		this.cancelButton.removeClass('mod-warning');

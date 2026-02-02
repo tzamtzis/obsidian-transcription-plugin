@@ -12,7 +12,7 @@ export class ManualDownloadInstructionsModal extends Modal {
 		contentEl.addClass('manual-download-modal');
 
 		// Title
-		contentEl.createEl('h2', { text: '⚠️ Automatic download failed' });
+		contentEl.createEl('h2', { text: 'Automatic download failed' });
 
 		// Error explanation
 		const errorSection = contentEl.createDiv({ cls: 'download-error-section' });
@@ -23,14 +23,14 @@ export class ManualDownloadInstructionsModal extends Modal {
 		});
 
 		const causesList = errorSection.createEl('ul', { cls: 'causes-list' });
-		causesList.createEl('li', { text: '🛡️ Antivirus or firewall blocking the connection to Hugging Face' });
-		causesList.createEl('li', { text: '🌐 Network proxy or corporate firewall restrictions' });
-		causesList.createEl('li', { text: '📶 Slow or unstable internet connection' });
-		causesList.createEl('li', { text: '🔒 Windows Defender blocking downloads' });
+		causesList.createEl('li', { text: 'Antivirus or firewall blocking the connection to Hugging Face' });
+		causesList.createEl('li', { text: 'Network proxy or corporate firewall restrictions' });
+		causesList.createEl('li', { text: 'Slow or unstable internet connection' });
+		causesList.createEl('li', { text: 'Windows Defender blocking downloads' });
 
 		// Manual instructions
 		const instructionsSection = contentEl.createDiv({ cls: 'download-instructions-section' });
-		instructionsSection.createEl('h3', { text: '📥 Manual download instructions' });
+		instructionsSection.createEl('h3', { text: 'Manual download instructions' });
 
 		const steps = instructionsSection.createEl('ol', { cls: 'instruction-steps' });
 
@@ -44,7 +44,7 @@ export class ManualDownloadInstructionsModal extends Modal {
 			cls: 'download-link'
 		});
 		urlLink.setAttr('target', '_blank');
-		const copyUrlBtn = step1.createEl('button', { text: '📋 Copy url', cls: 'copy-button' });
+		const copyUrlBtn = step1.createEl('button', { text: 'Copy URL', cls: 'copy-button' });
 		copyUrlBtn.onclick = () => {
 			void navigator.clipboard.writeText(this.modelUrl);
 			new Notice('URL copied to clipboard!');
@@ -55,7 +55,7 @@ export class ManualDownloadInstructionsModal extends Modal {
 		step2.createEl('strong', { text: 'Save the file as:' });
 		step2.createEl('br');
 		step2.createEl('code', { text: `ggml-${this.modelSize}.bin`, cls: 'filename' });
-		const copyFileBtn = step2.createEl('button', { text: '📋 Copy', cls: 'copy-button' });
+		const copyFileBtn = step2.createEl('button', { text: 'Copy', cls: 'copy-button' });
 		copyFileBtn.onclick = () => {
 			void navigator.clipboard.writeText(`ggml-${this.modelSize}.bin`);
 			new Notice('Filename copied to clipboard!');
@@ -66,13 +66,13 @@ export class ManualDownloadInstructionsModal extends Modal {
 		step3.createEl('strong', { text: 'Copy the file to this folder:' });
 		step3.createEl('br');
 		step3.createEl('code', { text: this.modelsDir, cls: 'filepath' });
-		const copyPathBtn = step3.createEl('button', { text: '📋 Copy path', cls: 'copy-button' });
+		const copyPathBtn = step3.createEl('button', { text: 'Copy path', cls: 'copy-button' });
 		copyPathBtn.onclick = () => {
 			void navigator.clipboard.writeText(this.modelsDir);
 			new Notice('Path copied to clipboard!');
 		};
 		step3.createEl('br');
-		const openFolderBtn = step3.createEl('button', { text: '📁 Open folder', cls: 'open-folder-button' });
+		const openFolderBtn = step3.createEl('button', { text: 'Open folder', cls: 'open-folder-button' });
 		openFolderBtn.onclick = () => {
 			window.require('electron').shell.openPath(this.modelsDir);
 		};
@@ -85,7 +85,7 @@ export class ManualDownloadInstructionsModal extends Modal {
 
 		// Troubleshooting section
 		const troubleshootSection = contentEl.createDiv({ cls: 'troubleshooting-section' });
-		troubleshootSection.createEl('h3', { text: '🔧 If download still fails in browser:' });
+		troubleshootSection.createEl('h3', { text: 'If download still fails in browser' });
 		const troubleshootList = troubleshootSection.createEl('ul');
 		troubleshootList.createEl('li', { text: 'Temporarily disable your antivirus/firewall' });
 		troubleshootList.createEl('li', { text: 'Try downloading from a different network (mobile hotspot)' });
@@ -195,7 +195,7 @@ export class ModelDownloadModal extends Modal {
 
 	setComplete() {
 		this.progressBar.setCssProps({ '--progress-width': '100%' });
-		this.statusText.setText('✓ Download complete!');
+		this.statusText.setText('Download complete!');
 		this.statusText.addClass('model-download-status-success');
 		this.cancelButton.setButtonText('Close');
 	}
@@ -243,7 +243,7 @@ export class OverwriteConfirmationModal extends Modal {
 		// Warning note
 		const warningDiv = contentEl.createDiv({ cls: 'overwrite-warning' });
 		warningDiv.createEl('p', {
-			text: '⚠️ Note: Overwriting will replace all existing content in the file.'
+			text: 'Note: overwriting will replace all existing content in the file.'
 		});
 
 		// Buttons
@@ -351,16 +351,16 @@ export class LanguageSelectionModal extends Modal {
 		// Info text
 		const infoDiv = contentEl.createDiv({ cls: 'language-selection-info' });
 		infoDiv.createEl('p', {
-			text: '💡 Tip: You can configure your favorite languages in the plugin settings.'
+			text: 'Tip: you can configure your favorite languages in the plugin settings.'
 		});
 		infoDiv.createEl('p', {
-			text: '🌐 For mixed language content (e.g., English & Greek), select "Auto-detect".'
+			text: 'For mixed language content (e.g., English and Greek), select "Auto-detect".'
 		});
 
 		// Custom instructions override (collapsible)
 		const advancedSection = contentEl.createEl('details', { cls: 'language-selection-advanced' });
 		const summary = advancedSection.createEl('summary', { cls: 'language-selection-advanced-summary' });
-		summary.setText('⚙️ Advanced: Override analysis instructions');
+		summary.setText('Advanced: override analysis instructions');
 
 		const advancedContent = advancedSection.createDiv({ cls: 'language-selection-advanced-content' });
 		advancedContent.createEl('p', {

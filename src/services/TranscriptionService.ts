@@ -89,7 +89,7 @@ export class TranscriptionService {
 		// Check if user cancelled
 		if (progressModal.isCancelled()) {
 			progressModal.close();
-			new Notice('⚠️ Transcription cancelled');
+			new Notice('Transcription cancelled');
 			return;
 		}
 
@@ -110,7 +110,7 @@ export class TranscriptionService {
 		progressModal.updateProgress('analysis', 85);
 	} catch (error) {
 		console.warn('First analysis attempt failed, retrying...', error);
-		progressModal.updateProgress('analysis', 65, '⚠️ Retrying analysis...');
+		progressModal.updateProgress('analysis', 65, 'Retrying analysis...');
 
 		// Retry analysis once
 		try {
@@ -120,7 +120,7 @@ export class TranscriptionService {
 		} catch (retryError) {
 			console.error('Analysis failed after retry:', retryError);
 			analysisError = this.getErrorMessage(retryError);
-			new Notice(`⚠️ Analysis failed: ${analysisError}. Saving transcription without analysis.`, 8000);
+			new Notice(`Analysis failed: ${analysisError}. Saving transcription without analysis.`, 8000);
 		}
 	}
 
@@ -132,9 +132,9 @@ export class TranscriptionService {
 		// Complete
 		progressModal.markComplete();
 		if (analysisError) {
-			new Notice('⚠️ Transcription complete, but analysis failed. Check the file for details.');
+			new Notice('Transcription complete, but analysis failed. Check the file for details.');
 		} else {
-			new Notice(' Transcription complete!');
+			new Notice('Transcription complete!');
 		}
 
 		// Open the created file
@@ -145,10 +145,10 @@ export class TranscriptionService {
 		if (this.plugin.settings.deleteAudioAfterTranscription) {
 			try {
 				await this.plugin.app.fileManager.trashFile(audioFile);
-				new Notice('🗑️ Audio file deleted after successful transcription');
+				new Notice('Audio file deleted after successful transcription');
 			} catch (deleteError) {
 				console.error('Failed to delete audio file:', deleteError);
-				new Notice('⚠️ Transcription complete but audio file could not be deleted', 8000);
+				new Notice('Transcription complete but audio file could not be deleted', 8000);
 			}
 		}
 
@@ -169,7 +169,7 @@ export class TranscriptionService {
 
 		if (fileSize > MAX_FILE_SIZE) {
 			const sizeMB = Math.round(fileSize / (1024 * 1024));
-			new Notice(`⚠️ Large file detected (${sizeMB}MB). Processing may take several minutes.`, 8000);
+			new Notice(`Large file detected (${sizeMB}MB). Processing may take several minutes.`, 8000);
 		}
 
 		// Validate based on processing mode
