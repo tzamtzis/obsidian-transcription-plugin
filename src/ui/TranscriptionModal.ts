@@ -44,7 +44,7 @@ export class ManualDownloadInstructionsModal extends Modal {
 			cls: 'download-link'
 		});
 		urlLink.setAttr('target', '_blank');
-		const copyUrlBtn = step1.createEl('button', { text: '📋 Copy URL', cls: 'copy-button' });
+		const copyUrlBtn = step1.createEl('button', { text: '📋 Copy url', cls: 'copy-button' });
 		copyUrlBtn.onclick = () => {
 			void navigator.clipboard.writeText(this.modelUrl);
 			new Notice('URL copied to clipboard!');
@@ -66,13 +66,13 @@ export class ManualDownloadInstructionsModal extends Modal {
 		step3.createEl('strong', { text: 'Copy the file to this folder:' });
 		step3.createEl('br');
 		step3.createEl('code', { text: this.modelsDir, cls: 'filepath' });
-		const copyPathBtn = step3.createEl('button', { text: '📋 Copy Path', cls: 'copy-button' });
+		const copyPathBtn = step3.createEl('button', { text: '📋 Copy path', cls: 'copy-button' });
 		copyPathBtn.onclick = () => {
 			void navigator.clipboard.writeText(this.modelsDir);
 			new Notice('Path copied to clipboard!');
 		};
 		step3.createEl('br');
-		const openFolderBtn = step3.createEl('button', { text: '📁 Open Folder', cls: 'open-folder-button' });
+		const openFolderBtn = step3.createEl('button', { text: '📁 Open folder', cls: 'open-folder-button' });
 		openFolderBtn.onclick = () => {
 			window.require('electron').shell.openPath(this.modelsDir);
 		};

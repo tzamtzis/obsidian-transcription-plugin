@@ -42,7 +42,7 @@ export const DATE_FORMAT_NAMES: Record<DateFormat, string> = {
 	'eu': 'European (DD/MM/YYYY)',
 	'full': 'Full (January 15, 2025)',
 	'datetime': 'Date & Time (YYYY-MM-DD HH:MM:SS)',
-	'locale': 'System Locale'
+	'locale': 'System locale'
 };
 
 export const LANGUAGE_NAMES: Record<Language, string> = {
@@ -505,10 +505,10 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 			.setDesc('Choose the icon displayed in the sidebar ribbon')
 			.addDropdown(dropdown => dropdown
 				.addOption('microphone', '🎤 Microphone')
-				.addOption('audio-file', '🎵 Audio File')
+				.addOption('audio-file', '🎵 Audio file')
 				.addOption('headphones', '🎧 Headphones')
 				.addOption('mic', '🎙️ Mic')
-				.addOption('audio-lines', '🎚️ Audio Lines')
+				.addOption('audio-lines', '🎚️ Audio lines')
 				.addOption('volume-2', '🔊 Volume')
 				.addOption('radio', '📻 Radio')
 				.addOption('podcast', '🎙️ Podcast')
