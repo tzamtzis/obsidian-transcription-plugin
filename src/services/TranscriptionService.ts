@@ -632,10 +632,10 @@ ${transcriptText}
 		this.openRouterProcessor.cancel();
 	}
 
-	private getFullPath(relativePath: string): string {
+private getFullPath(relativePath: string): string {
 		const adapter = this.plugin.app.vault.adapter;
 		if (adapter instanceof FileSystemAdapter) {
-			return path.join(adapter.getBasePath(), relativePath);
+			return adapter.getFullPath(relativePath);
 		}
 		throw new Error('FileSystemAdapter required for local file operations');
 	}
