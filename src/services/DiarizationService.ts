@@ -124,10 +124,10 @@ export class DiarizationService {
 	 * @param transcription - Existing transcription result
 	 * @returns Updated transcription with speaker labels
 	 */
-	async diarize(
+	diarize(
 		audioPath: string,
 		transcription: TranscriptionResult
-	): Promise<TranscriptionResult> {
+	): TranscriptionResult {
 		// TODO: Implement actual diarization
 		// For now, return transcription unchanged
 

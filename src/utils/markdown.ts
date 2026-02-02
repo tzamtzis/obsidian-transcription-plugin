@@ -1,6 +1,6 @@
 // Markdown formatting utilities
 
-export function createFrontmatter(data: Record<string, any>): string {
+export function createFrontmatter(data: Record<string, string | number | boolean | string[]>): string {
 	const lines = ['---'];
 	for (const [key, value] of Object.entries(data)) {
 		if (Array.isArray(value)) {

@@ -1,4 +1,4 @@
-import { Plugin, TFile, Notice, Menu } from 'obsidian';
+import { Plugin, TFile, Notice, Menu, setIcon } from 'obsidian';
 import { AudioTranscriptionSettingTab, AudioTranscriptionSettings, DEFAULT_SETTINGS, Language } from './settings';
 import { TranscriptionService } from './services/TranscriptionService';
 import { ModelManager } from './services/ModelManager';
@@ -23,8 +23,8 @@ export default class AudioTranscriptionPlugin extends Plugin {
 		this.ribbonIconEl = this.addRibbonIcon(
 			this.settings.ribbonIcon,
 			'Transcribe audio file',
-			async () => {
-				await this.selectAndTranscribeAudioFile();
+			() => {
+				this.selectAndTranscribeAudioFile();
 			}
 		);
 
@@ -66,12 +66,7 @@ export default class AudioTranscriptionPlugin extends Plugin {
 	updateRibbonIcon(iconName: string) {
 		if (this.ribbonIconEl) {
 			// Update the icon using Obsidian's setIcon method
-			const iconEl = this.ribbonIconEl.querySelector('.svg-icon');
-			if (iconEl) {
-				iconEl.empty();
-				// Use Obsidian's icon system
-				(this.app as any).setIcon(iconEl, iconName);
-			}
+			setIcon(this.ribbonIconEl, iconName);
 		}
 	}
 
@@ -80,7 +75,7 @@ export default class AudioTranscriptionPlugin extends Plugin {
 		return audioExtensions.includes(file.extension.toLowerCase());
 	}
 
-	private async selectAndTranscribeAudioFile() {
+	private selectAndTranscribeAudioFile(): void {
 		// TODO: Implement file picker for audio files
 		new Notice('Please right-click on an audio file to transcribe it.');
 	}
@@ -140,7 +135,7 @@ export default class AudioTranscriptionPlugin extends Plugin {
 
 		// Step 3: Check if model is available (for local processing)
 		if (this.settings.processingMode === 'local') {
-			const modelExists = await this.modelManager.checkModelExists(this.settings.modelSize);
+			const modelExists = this.modelManager.checkModelExists(this.settings.modelSize);
 			if (!modelExists) {
 				const shouldDownload = await this.promptModelDownload();
 				if (shouldDownload) {
@@ -183,7 +178,7 @@ export default class AudioTranscriptionPlugin extends Plugin {
 
 	private async promptModelDownload(): Promise<boolean> {
 		return new Promise((resolve) => {
-			const modal = new Notice('Model required. Please download it from settings.', 10000);
+			new Notice('Model required. Please download it from settings.', 10000);
 			// TODO: Implement proper modal for model download confirmation
 			resolve(false);
 		});
@@ -191,7 +186,7 @@ export default class AudioTranscriptionPlugin extends Plugin {
 
 	private async checkModelsOnStartup() {
 		if (this.settings.processingMode === 'local') {
-			const modelExists = await this.modelManager.checkModelExists(this.settings.modelSize);
+			const modelExists = this.modelManager.checkModelExists(this.settings.modelSize);
 			if (!modelExists) {
 				new Notice('Audio Transcription: No model found. Please download a model in settings.', 8000);
 			}
