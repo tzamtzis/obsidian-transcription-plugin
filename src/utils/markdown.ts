@@ -7,7 +7,8 @@ export function createFrontmatter(data: Record<string, string | number | boolean
 			const joined = value.join(', ');
 			lines.push(`${key}: [${joined}]`);
 		} else if (typeof value === 'string') {
-			lines.push(`${key}: "${value}"`);
+			const escapedValue = value.replace(/"/g, '\\"');
+			lines.push(`${key}: "${escapedValue}"`);
 		} else {
 			lines.push(`${key}: ${value}`);
 		}
