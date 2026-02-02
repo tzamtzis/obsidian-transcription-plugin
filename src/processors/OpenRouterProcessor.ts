@@ -1,6 +1,6 @@
 import { requestUrl } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
-import { TranscriptionResult, AnalysisResult } from '../services/TranscriptionService';
+import { AnalysisResult } from '../services/TranscriptionService';
 
 export class OpenRouterProcessor {
 	private plugin: AudioTranscriptionPlugin;

@@ -23,12 +23,8 @@ export default class AudioTranscriptionPlugin extends Plugin {
 		this.ribbonIconEl = this.addRibbonIcon(
 			this.settings.ribbonIcon,
 			'Transcribe audio file',
-			async () => {
-				try {
-					await this.selectAndTranscribeAudioFile();
-				} catch (e: any) {
-					new Notice(`Transcription error: ${e.message}`);
-				}
+			() => {
+				void this.selectAndTranscribeAudioFile();
 			}
 		);
 
@@ -52,7 +48,7 @@ export default class AudioTranscriptionPlugin extends Plugin {
 		this.addSettingTab(new AudioTranscriptionSettingTab(this.app, this));
 
 		// Check for models on startup
-		await this.checkModelsOnStartup();
+		this.checkModelsOnStartup();
 	}
 
 	onunload() {
@@ -188,7 +184,7 @@ export default class AudioTranscriptionPlugin extends Plugin {
 		});
 	}
 
-	private async checkModelsOnStartup() {
+	private checkModelsOnStartup(): void {
 		if (this.settings.processingMode === 'local') {
 			const modelExists = this.modelManager.checkModelExists(this.settings.modelSize);
 			if (!modelExists) {

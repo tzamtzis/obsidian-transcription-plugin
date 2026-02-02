@@ -6,7 +6,6 @@ import { OpenRouterProcessor } from '../processors/OpenRouterProcessor';
 import { TranscriptionProgressModal } from '../ui/TranscriptionProgressModal';
 import { getAudioDuration, estimateTranscriptionTime, formatEstimatedTime } from '../utils/audio';
 import { Language, DateFormat } from '../settings';
-import * as path from 'path';
 
 export interface TranscriptionResult {
 	text: string;
@@ -78,7 +77,7 @@ export class TranscriptionService {
 		try {
 			// Validate setup before starting
 			progressModal.updateProgress('validation', 5);
-			await this.validateSetup(audioFile);
+			this.validateSetup(audioFile);
 
 			// Step 1: Transcribe audio
 			progressModal.updateProgress('transcription', 10);
@@ -161,7 +160,7 @@ export class TranscriptionService {
 	}
 }
 
-	private async validateSetup(audioFile: TFile): Promise<void> {
+	private validateSetup(audioFile: TFile): void {
 		const { processingMode } = this.plugin.settings;
 
 		// Validate file size (warn if > 100MB)
@@ -316,7 +315,7 @@ export class TranscriptionService {
 			return await this.transcribeCloudWhisper(audioFile, language);
 		} else {
 			// Use OpenRouter
-			return await this.transcribeCloudOpenRouter(audioFile, language);
+			return this.transcribeCloudOpenRouter(audioFile, language);
 		}
 	}
 
