@@ -46,7 +46,7 @@ export class ManualDownloadInstructionsModal extends Modal {
 		urlLink.setAttr('target', '_blank');
 		const copyUrlBtn = step1.createEl('button', { text: '📋 Copy URL', cls: 'copy-button' });
 		copyUrlBtn.onclick = () => {
-			navigator.clipboard.writeText(this.modelUrl);
+			void navigator.clipboard.writeText(this.modelUrl);
 			new Notice('URL copied to clipboard!');
 		};
 
@@ -57,7 +57,7 @@ export class ManualDownloadInstructionsModal extends Modal {
 		step2.createEl('code', { text: `ggml-${this.modelSize}.bin`, cls: 'filename' });
 		const copyFileBtn = step2.createEl('button', { text: '📋 Copy', cls: 'copy-button' });
 		copyFileBtn.onclick = () => {
-			navigator.clipboard.writeText(`ggml-${this.modelSize}.bin`);
+			void navigator.clipboard.writeText(`ggml-${this.modelSize}.bin`);
 			new Notice('Filename copied to clipboard!');
 		};
 
@@ -68,7 +68,7 @@ export class ManualDownloadInstructionsModal extends Modal {
 		step3.createEl('code', { text: this.modelsDir, cls: 'filepath' });
 		const copyPathBtn = step3.createEl('button', { text: '📋 Copy Path', cls: 'copy-button' });
 		copyPathBtn.onclick = () => {
-			navigator.clipboard.writeText(this.modelsDir);
+			void navigator.clipboard.writeText(this.modelsDir);
 			new Notice('Path copied to clipboard!');
 		};
 		step3.createEl('br');
@@ -135,7 +135,7 @@ export class ModelDownloadModal extends Modal {
 
 		// Progress bar fill
 		this.progressBar = progressBg.createDiv({ cls: 'model-download-progress-bar' });
-		this.progressBar.style.setProperty('--progress-width', '0%');
+		this.progressBar.setCssProps({ '--progress-width': '0%' });
 
 		// Progress text
 		this.progressText = contentEl.createDiv({ cls: 'model-download-progress-text' });
@@ -150,7 +150,7 @@ export class ModelDownloadModal extends Modal {
 		// Cancel button
 		const buttonContainer = contentEl.createDiv({ cls: 'model-download-buttons' });
 		this.cancelButton = new ButtonComponent(buttonContainer)
-			.setButtonText('Cancel Download')
+			.setButtonText('Cancel download')
 			.onClick(() => {
 				this.cancelled = true;
 				if (this.onCancel) {
@@ -173,7 +173,7 @@ export class ModelDownloadModal extends Modal {
 		const downloadedMB = Math.round(downloaded / (1024 * 1024));
 		const totalMB = Math.round(total / (1024 * 1024));
 
-		this.progressBar.style.setProperty('--progress-width', `${percentage}%`);
+		this.progressBar.setCssProps({ '--progress-width': `${percentage}%` });
 		this.progressText.setText(`${downloadedMB} MB / ${totalMB} MB (${Math.round(percentage)}%)`);
 
 		// Update status
@@ -194,7 +194,7 @@ export class ModelDownloadModal extends Modal {
 	}
 
 	setComplete() {
-		this.progressBar.style.setProperty('--progress-width', '100%');
+		this.progressBar.setCssProps({ '--progress-width': '100%' });
 		this.statusText.setText('✓ Download complete!');
 		this.statusText.addClass('model-download-status-success');
 		this.cancelButton.setButtonText('Close');
@@ -360,7 +360,7 @@ export class LanguageSelectionModal extends Modal {
 		// Custom instructions override (collapsible)
 		const advancedSection = contentEl.createEl('details', { cls: 'language-selection-advanced' });
 		const summary = advancedSection.createEl('summary', { cls: 'language-selection-advanced-summary' });
-		summary.setText('⚙️ Advanced: Override Analysis Instructions');
+		summary.setText('⚙️ Advanced: Override analysis instructions');
 
 		const advancedContent = advancedSection.createDiv({ cls: 'language-selection-advanced-content' });
 		advancedContent.createEl('p', {

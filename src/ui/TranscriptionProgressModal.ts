@@ -64,7 +64,7 @@ export class TranscriptionProgressModal extends Modal {
 		this.statusText.setText(statusMessage);
 
 		// Update progress bar using CSS custom property
-		this.progressFill.style.setProperty('--progress-width', `${this.currentProgress}%`);
+		this.progressFill.setCssProps({ '--progress-width': `${this.currentProgress}%` });
 
 		// Update percentage
 		this.percentText.setText(`${Math.round(this.currentProgress)}%`);

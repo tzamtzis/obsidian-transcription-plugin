@@ -203,7 +203,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 			const langDiv = favLangContainer.createDiv({ cls: 'favorite-language-item' });
 			const checkbox = langDiv.createEl('input', { type: 'checkbox' });
 			checkbox.checked = this.plugin.settings.favoriteLanguages.includes(lang);
-			checkbox.addEventListener('change', async () => {
+			checkbox.addEventListener('change', () => {
 				if (checkbox.checked) {
 					if (!this.plugin.settings.favoriteLanguages.includes(lang)) {
 						this.plugin.settings.favoriteLanguages.push(lang);
@@ -211,7 +211,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 				} else {
 					this.plugin.settings.favoriteLanguages = this.plugin.settings.favoriteLanguages.filter(l => l !== lang);
 				}
-				await this.plugin.saveSettings();
+				void this.plugin.saveSettings();
 			});
 
 			const label = langDiv.createEl('label');
@@ -350,7 +350,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 				.setName('Download model')
 				.setDesc('Download the selected model for local transcription')
 				.addButton(button => button
-					.setButtonText('Download Model')
+					.setButtonText('Download model')
 					.onClick(async () => {
 						button.setDisabled(true);
 						button.setButtonText('Downloading...');
@@ -393,7 +393,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 							}
 						} finally {
 							button.setDisabled(false);
-							button.setButtonText('Download Model');
+							button.setButtonText('Download model');
 						}
 					}));
 
@@ -401,7 +401,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 				.setName('Download Whisper.cpp binary')
 				.setDesc('Download the whisper.cpp executable for Windows (required for local processing)')
 				.addButton(button => button
-					.setButtonText('Download Binary')
+					.setButtonText('Download binary')
 					.onClick(async () => {
 						button.setDisabled(true);
 						button.setButtonText('Downloading...');
@@ -409,14 +409,14 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 							await this.plugin.transcriptionService.localProcessor.downloadBinary((progress) => {
 								button.setButtonText(`Downloading... ${progress}%`);
 							});
-							button.setButtonText('Download Complete!');
+							button.setButtonText('Download complete!');
 							setTimeout(() => {
 								this.display(); // Refresh to update status
 							}, 2000);
 						} catch (error) {
 							console.error('Failed to download binary:', error);
 							new Notice(`Failed to download binary: ${error.message}`);
-							button.setButtonText('Download Binary');
+							button.setButtonText('Download binary');
 						} finally {
 							button.setDisabled(false);
 						}
@@ -541,9 +541,9 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 					text: recent.audioFileName,
 					cls: 'recent-transcription-link'
 				});
-				link.addEventListener('click', async (e) => {
+				link.addEventListener('click', (e) => {
 					e.preventDefault();
-					await this.plugin.app.workspace.openLinkText(recent.markdownPath, '', true);
+					void this.plugin.app.workspace.openLinkText(recent.markdownPath, '', true);
 				});
 
 				// Add metadata
@@ -558,7 +558,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 				.setName('Clear history')
 				.setDesc('Remove all entries from recent transcriptions')
 				.addButton(button => button
-					.setButtonText('Clear All')
+					.setButtonText('Clear all')
 					.setWarning()
 					.onClick(async () => {
 						this.plugin.settings.recentTranscriptions = [];
