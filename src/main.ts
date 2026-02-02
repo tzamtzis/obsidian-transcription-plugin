@@ -24,7 +24,7 @@ export default class AudioTranscriptionPlugin extends Plugin {
 			this.settings.ribbonIcon,
 			'Transcribe audio file',
 			() => {
-				this.selectAndTranscribeAudioFile();
+				void this.selectAndTranscribeAudioFile();
 			}
 		);
 
