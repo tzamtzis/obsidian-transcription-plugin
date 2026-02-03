@@ -271,7 +271,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		new Setting(containerEl).setName('Analysis').setHeading();
 
 		containerEl.createEl('p', {
-			text: 'Analysis uses OpenRouter to extract summaries, key points, and action items from transcriptions',
+text: 'Analysis uses OpenRouter to extract summaries, key points, and action items from transcriptions.',
 			cls: 'setting-item-description'
 		});
 
