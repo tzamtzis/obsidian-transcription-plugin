@@ -23,10 +23,10 @@ export class ManualDownloadInstructionsModal extends Modal {
 		});
 
 		const causesList = errorSection.createEl('ul', { cls: 'causes-list' });
-		causesList.createEl('li', { text: 'Antivirus or firewall blocking the connection to Hugging Face' });
-		causesList.createEl('li', { text: 'Network proxy or corporate firewall restrictions' });
-		causesList.createEl('li', { text: 'Slow or unstable internet connection' });
-		causesList.createEl('li', { text: 'Windows Defender blocking downloads' });
+		causesList.createEl('li', { text: 'Antivirus or firewall blocking the connection to Hugging Face.' });
+		causesList.createEl('li', { text: 'Network proxy or corporate firewall restrictions.' });
+		causesList.createEl('li', { text: 'Slow or unstable internet connection.' });
+		causesList.createEl('li', { text: 'Windows Defender blocking downloads.' });
 
 		// Manual instructions
 		const instructionsSection = contentEl.createDiv({ cls: 'download-instructions-section' });
@@ -87,9 +87,9 @@ export class ManualDownloadInstructionsModal extends Modal {
 		const troubleshootSection = contentEl.createDiv({ cls: 'troubleshooting-section' });
 		troubleshootSection.createEl('h3', { text: 'If download still fails in browser' });
 		const troubleshootList = troubleshootSection.createEl('ul');
-		troubleshootList.createEl('li', { text: 'Temporarily disable your antivirus/firewall' });
-		troubleshootList.createEl('li', { text: 'Try downloading from a different network (mobile hotspot)' });
-		troubleshootList.createEl('li', { text: 'Use a VPN if Hugging Face is blocked in your region' });
+		troubleshootList.createEl('li', { text: 'Temporarily disable your antivirus/firewall.' });
+		troubleshootList.createEl('li', { text: 'Try downloading from a different network (Mobile hotspot).' });
+		troubleshootList.createEl('li', { text: 'Use a VPN if Hugging Face is blocked in your region.' });
 
 		// Close button
 		const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
@@ -139,7 +139,7 @@ export class ModelDownloadModal extends Modal {
 
 		// Progress text
 		this.progressText = contentEl.createDiv({ cls: 'model-download-progress-text' });
-		this.progressText.setText('0 MB / 0 MB (0%)');
+		this.progressText.setText('0 MB of 0 MB (0%)');
 
 		// Info text
 		contentEl.createEl('p', {
@@ -170,15 +170,15 @@ export class ModelDownloadModal extends Modal {
 		if (this.cancelled) return;
 
 		const percentage = total > 0 ? (downloaded / total) * 100 : 0;
-		const downloadedMB = Math.round(downloaded / (1024 * 1024));
-		const totalMB = Math.round(total / (1024 * 1024));
+		const downloadedMB = Math.floor(downloaded / (1024 * 1024));
+		const totalMB = Math.ceil(total / (1024 * 1024));
 
 		this.progressBar.setCssProps({ '--progress-width': `${percentage}%` });
-		this.progressText.setText(`${downloadedMB} MB / ${totalMB} MB (${Math.round(percentage)}%)`);
+		this.progressText.setText(`${downloadedMB} MB of ${totalMB} MB (${Math.round(percentage)}%)`);
 
 		// Update status
 		if (percentage < 100) {
-			const remainingMB = Math.round((total - downloaded) / (1024 * 1024));
+			const remainingMB = Math.ceil((total - downloaded) / (1024 * 1024));
 			this.statusText.setText(`Downloading... ${remainingMB} MB remaining`);
 		}
 	}
@@ -354,7 +354,7 @@ export class LanguageSelectionModal extends Modal {
 			text: 'Tip: you can configure your favorite languages in the plugin settings.'
 		});
 		infoDiv.createEl('p', {
-			text: 'For mixed language content (e.g., English and Greek), select "Auto-detect".'
+			text: 'For mixed language content (For example, English and Greek), select "Auto-detect".'
 		});
 
 		// Custom instructions override (collapsible)
