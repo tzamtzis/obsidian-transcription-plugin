@@ -461,7 +461,7 @@ text: 'Analysis uses OpenRouter to extract summaries, key points, and action ite
 
 		new Setting(containerEl)
 			.setName('Skip if already analyzed')
-			.setDesc('Skips transcription if a markdown file with analysis already exists')
+.setDesc('Skips transcription if a markdown file with analysis already exists.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.skipIfAnalyzed)
 				.onChange(async (value) => {
