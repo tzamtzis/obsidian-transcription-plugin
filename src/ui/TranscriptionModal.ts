@@ -170,15 +170,15 @@ export class ModelDownloadModal extends Modal {
 		if (this.cancelled) return;
 
 		const percentage = total > 0 ? (downloaded / total) * 100 : 0;
-		const downloadedMB = Math.round(downloaded / (1024 * 1024));
-		const totalMB = Math.round(total / (1024 * 1024));
+		const downloadedMB = Math.floor(downloaded / (1024 * 1024));
+		const totalMB = Math.ceil(total / (1024 * 1024));
 
 		this.progressBar.setCssProps({ '--progress-width': `${percentage}%` });
 		this.progressText.setText(`${downloadedMB} MB of ${totalMB} MB (${Math.round(percentage)}%)`);
 
 		// Update status
 		if (percentage < 100) {
-			const remainingMB = Math.round((total - downloaded) / (1024 * 1024));
+			const remainingMB = Math.ceil((total - downloaded) / (1024 * 1024));
 			this.statusText.setText(`Downloading... ${remainingMB} MB remaining`);
 		}
 	}
