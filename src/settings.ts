@@ -153,9 +153,9 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 			.setName('Processing mode')
 			.setDesc('Choose where to process your audio files')
 			.addDropdown(dropdown => dropdown
-				.addOption('local', 'Local (Whisper.cpp) - Private, no internet needed')
-				.addOption('cloud-whisper', 'Cloud (OpenAI Whisper) - Faster, requires API key')
-				.addOption('cloud-openrouter', 'Cloud (OpenRouter) - Use custom models')
+				.addOption('local', 'Local (whisper.cpp) – private, no internet needed')
+				.addOption('cloud-whisper', 'Cloud (openai whisper) - faster, requires api key')
+				.addOption('cloud-openrouter', 'Cloud (openrouter) - use custom models')
 				.setValue(this.plugin.settings.processingMode)
 				.onChange(async (value: ProcessingMode) => {
 					this.plugin.settings.processingMode = value;
@@ -167,13 +167,13 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		if (this.plugin.settings.processingMode === 'local') {
 			new Setting(containerEl)
 				.setName('Model size (local)')
-				.setDesc('Larger models are more accurate but slower. Medium is recommended for Greek.')
+				.setDesc('Larger models are more accurate but slower. Medium is recommended for less common languages.')
 				.addDropdown(dropdown => dropdown
-					.addOption('tiny', 'Tiny (75 MB) - Very fast, basic accuracy')
-					.addOption('base', 'Base (142 MB) - Fast, good accuracy')
-					.addOption('small', 'Small (466 MB) - Moderate speed, very good accuracy')
-					.addOption('medium', 'Medium (1.5 GB) - Recommended, excellent accuracy')
-					.addOption('large', 'Large (2.9 GB) - Best accuracy, slower')
+					.addOption('tiny', 'Tiny (75 mb) - very fast, basic accuracy')
+					.addOption('base', 'Base (142 mb) - fast, good accuracy')
+					.addOption('small', 'Small (466 mb) - moderate speed, very good accuracy')
+					.addOption('medium', 'Medium (1.5 gb) - recommended, excellent accuracy')
+					.addOption('large', 'Large (2.9 gb) - best accuracy, slower')
 					.setValue(this.plugin.settings.modelSize)
 					.onChange(async (value: ModelSize) => {
 						this.plugin.settings.modelSize = value;
@@ -271,7 +271,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 		new Setting(containerEl).setName('Analysis').setHeading();
 
 		containerEl.createEl('p', {
-text: 'Analysis uses OpenRouter to extract summaries, key points, and action items from transcriptions.',
+			text: 'Analysis uses openrouter to extract summaries, key points, and action items from transcriptions.',
 			cls: 'setting-item-description'
 		});
 
@@ -295,8 +295,8 @@ text: 'Analysis uses OpenRouter to extract summaries, key points, and action ite
 
 		if (this.plugin.settings.processingMode === 'cloud-whisper') {
 			new Setting(containerEl)
-				.setName('OpenAI API key')
-				.setDesc('Required for Whisper API transcription')
+				.setName('openai API key')
+				.setDesc('Required for whisper API transcription')
 				.addText(text => {
 					text.setPlaceholder('sk-xxx')
 						.setValue(this.plugin.settings.openaiApiKey)
@@ -310,7 +310,7 @@ text: 'Analysis uses OpenRouter to extract summaries, key points, and action ite
 
 		// OpenRouter is always needed for analysis
 		new Setting(containerEl)
-			.setName('OpenRouter API key')
+			.setName('openrouter API key')
 			.setDesc('Required for AI-powered transcript analysis')
 			.addText(text => {
 				text.setPlaceholder('sk-or-xxx')
@@ -323,7 +323,7 @@ text: 'Analysis uses OpenRouter to extract summaries, key points, and action ite
 			});
 
 		new Setting(containerEl)
-			.setName('OpenRouter model name')
+			.setName('Openrouter model name')
 			.setDesc('The model to use for analysis (e.g., meta-llama/llama-3.2-3b-instruct)')
 			.addText(text => text
 				.setPlaceholder('meta-llama/llama-3.2-3b-instruct')
@@ -398,8 +398,8 @@ text: 'Analysis uses OpenRouter to extract summaries, key points, and action ite
 					}));
 
 			new Setting(containerEl)
-				.setName('Download Whisper.cpp binary')
-				.setDesc('Download the Whisper.cpp executable for Windows (Required for local processing)')
+				.setName('Download whisper.cpp binary')
+				.setDesc('Download the whisper.cpp executable for Windows (required for local processing)')
 				.addButton(button => button
 					.setButtonText('Download binary')
 					.onClick(async () => {
@@ -430,7 +430,7 @@ text: 'Analysis uses OpenRouter to extract summaries, key points, and action ite
 
 		new Setting(containerEl)
 			.setName('Output folder')
-			.setDesc('Folder where transcription markdown files will be saved (Leave empty for same folder as audio)')
+			.setDesc('Folder where transcription markdown files will be saved (leave empty for same folder as audio)')
 			.addText(text => text
 				.setPlaceholder('Transcriptions')
 				.setValue(this.plugin.settings.outputFolder)
@@ -461,7 +461,7 @@ text: 'Analysis uses OpenRouter to extract summaries, key points, and action ite
 
 		new Setting(containerEl)
 			.setName('Skip if already analyzed')
-.setDesc('Skips transcription if a markdown file with analysis already exists.')
+			.setDesc('Skips transcription if a markdown file with analysis already exists.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.skipIfAnalyzed)
 				.onChange(async (value) => {
