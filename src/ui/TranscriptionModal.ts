@@ -139,7 +139,7 @@ export class ModelDownloadModal extends Modal {
 
 		// Progress text
 		this.progressText = contentEl.createDiv({ cls: 'model-download-progress-text' });
-		this.progressText.setText('0 mb of 0 mb (0%)');
+		this.progressText.setText('0 MB of 0 MB (0%)');
 
 		// Info text
 		contentEl.createEl('p', {
@@ -354,7 +354,7 @@ export class LanguageSelectionModal extends Modal {
 			text: 'Tip: you can configure your favorite languages in the plugin settings.'
 		});
 		infoDiv.createEl('p', {
-			text: 'For mixed language content (for example, english and greek), select "auto-detect".'
+			text: 'For mixed language content (for example, English and Greek), select "auto-detect".'
 		});
 
 		// Custom instructions override (collapsible)
