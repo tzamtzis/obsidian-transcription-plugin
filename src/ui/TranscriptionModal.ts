@@ -88,7 +88,7 @@ export class ManualDownloadInstructionsModal extends Modal {
 		troubleshootSection.createEl('h3', { text: 'If download still fails in browser' });
 		const troubleshootList = troubleshootSection.createEl('ul');
 		troubleshootList.createEl('li', { text: 'Temporarily disable your antivirus/firewall.' });
-		troubleshootList.createEl('li', { text: 'Try downloading from a different network (Mobile hotspot).' });
+		troubleshootList.createEl('li', { text: 'Try downloading from a different network (mobile hotspot).' });
 		troubleshootList.createEl('li', { text: 'Use a VPN if Hugging Face is blocked in your region.' });
 
 		// Close button
@@ -139,7 +139,7 @@ export class ModelDownloadModal extends Modal {
 
 		// Progress text
 		this.progressText = contentEl.createDiv({ cls: 'model-download-progress-text' });
-		this.progressText.setText('0 MB of 0 MB (0%)');
+		this.progressText.setText('0 mb of 0 mb (0%)');
 
 		// Info text
 		contentEl.createEl('p', {
@@ -354,7 +354,7 @@ export class LanguageSelectionModal extends Modal {
 			text: 'Tip: you can configure your favorite languages in the plugin settings.'
 		});
 		infoDiv.createEl('p', {
-			text: 'For mixed language content (For example, English and Greek), select "Auto-detect".'
+			text: 'For mixed language content (for example, english and greek), select "auto-detect".'
 		});
 
 		// Custom instructions override (collapsible)
