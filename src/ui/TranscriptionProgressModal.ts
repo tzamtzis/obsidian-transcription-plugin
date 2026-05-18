@@ -121,7 +121,7 @@ export class TranscriptionProgressModal extends Modal {
 		this.cancelButton.addClass('audio-transcription-hidden');
 
 		// Auto-close after 2 seconds
-		setTimeout(() => {
+		window.setTimeout(() => {
 			this.close();
 		}, 2000);
 	}

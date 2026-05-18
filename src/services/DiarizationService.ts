@@ -125,14 +125,11 @@ export class DiarizationService {
 	 * @returns Updated transcription with speaker labels
 	 */
 	diarize(
-		audioPath: string,
+		_audioPath: string,
 		transcription: TranscriptionResult
 	): TranscriptionResult {
 		// TODO: Implement actual diarization
 		// For now, return transcription unchanged
-
-		console.debug('Diarization requested but not yet implemented');
-		console.debug(`Audio: ${audioPath}, Expected speakers: ${this.plugin.settings.speakerCount}`);
 
 		// Future implementation will:
 		// 1. Call diarization service (cloud or local)

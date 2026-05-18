@@ -2,6 +2,7 @@ import { Notice, FileSystemAdapter } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
 import { ModelSize } from '../settings';
 import { ModelDownloadModal } from '../ui/TranscriptionModal';
+import { getErrorMessage, toError } from '../utils/errors';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
@@ -41,7 +42,11 @@ export class ModelManager {
 		}
 		const pluginDir = adapter.getBasePath();
 		const configDir = this.plugin.app.vault.configDir;
-		this.modelsDir = path.join(pluginDir, configDir, 'plugins', 'obsidian-transcription-plugin', 'models');
+		// Use the folder the plugin was actually loaded from, not a hardcoded
+		// name. manifest.dir is the vault-relative plugin path (e.g.
+		// ".obsidian/plugins/<folder>"); fall back to id-based path if absent.
+		const relativePluginDir = this.plugin.manifest.dir ?? `${configDir}/plugins/${this.plugin.manifest.id}`;
+		this.modelsDir = path.join(pluginDir, relativePluginDir, 'models');
 		this.ensureModelsDirectory();
 	}
 
@@ -80,18 +85,18 @@ export class ModelManager {
 					}
 					await this.downloadModelAttempt(modelSize, onProgress);
 					return; // Success!
-				} catch (error) {
-					lastError = error;
+				} catch (error: unknown) {
+					lastError = toError(error);
 					console.error(`Download attempt ${attempt + 1} failed:`, error);
 
 					// If it's a user cancellation, don't retry
-					if (error.message && error.message.includes('cancelled')) {
+					if (getErrorMessage(error).includes('cancelled')) {
 						throw error;
 					}
 
 					// Wait a bit before retrying
 					if (attempt < maxRetries - 1) {
-						await new Promise(resolve => setTimeout(resolve, 2000));
+						await new Promise(resolve => window.setTimeout(resolve, 2000));
 					}
 				}
 			}
@@ -174,7 +179,7 @@ export class ModelManager {
 
 			// Wait a moment for file system to release locks (especially on Windows)
 			// This prevents EPERM/EBUSY errors when renaming
-			await new Promise(resolve => setTimeout(resolve, 500));
+			await new Promise(resolve => window.setTimeout(resolve, 500));
 
 			// Move temp file to final location with retry logic
 			let retries = 3;
@@ -195,7 +200,7 @@ export class ModelManager {
 						throw new Error(`Failed to finalize download: ${(error as Error).message}`);
 					}
 					// Wait before retry
-					await new Promise(resolve => setTimeout(resolve, 1000));
+					await new Promise(resolve => window.setTimeout(resolve, 1000));
 				}
 			}
 
@@ -203,7 +208,7 @@ export class ModelManager {
 			new Notice(`${modelSize} model downloaded successfully!`);
 
 			// Close modal after 2 seconds
-			setTimeout(() => {
+			window.setTimeout(() => {
 				modal.close();
 			}, 2000);
 
@@ -249,16 +254,7 @@ export class ModelManager {
 
 			// Show manual download instructions if network-related
 			if (showManualInstructions) {
-				console.debug('\n═══════════════════════════════════════════════════════════');
-				console.debug('MANUAL DOWNLOAD INSTRUCTIONS:');
-				console.debug('═══════════════════════════════════════════════════════════');
-				console.debug(`1. Open in browser: ${this.modelUrls[modelSize]}`);
-				console.debug(`2. Save the file as: ggml-${modelSize}.bin`);
-				console.debug(`3. Copy the file to: ${this.modelsDir}`);
-				console.debug('4. Restart Obsidian');
-				console.debug('═══════════════════════════════════════════════════════════\n');
-
-				new Notice('Download failed. See console (Ctrl+Shift+I) for manual download instructions.', 10000);
+				new Notice('Download failed. Open settings to view manual download instructions.', 10000);
 			}
 
 			// Clean up temp file
@@ -322,6 +318,11 @@ export class ModelManager {
 							return;
 						}
 
+						// Cancel THIS request's connection timeout before following the
+						// redirect. Each download() call has its own connectionTimeout but
+						// shares one Promise, so a stale timer from the pre-redirect request
+						// would otherwise fire ~30s later and reject an in-flight download.
+						window.clearTimeout(connectionTimeout);
 						download(redirectUrl, redirectCount + 1);
 						return;
 					}
@@ -335,7 +336,7 @@ export class ModelManager {
 					let downloadedSize = 0;
 
 					// Clear connection timeout - we've connected successfully
-					clearTimeout(connectionTimeout);
+					window.clearTimeout(connectionTimeout);
 
 					// Create write stream
 					const fileStream = fs.createWriteStream(destPath);
@@ -365,9 +366,9 @@ export class ModelManager {
 
 					fileStream.on('close', () => {
 						// Clean up timeouts
-						clearTimeout(connectionTimeout);
+						window.clearTimeout(connectionTimeout);
 						if (inactivityTimeout) {
-							clearTimeout(inactivityTimeout);
+							window.clearTimeout(inactivityTimeout);
 						}
 						// Only resolve after file is fully closed
 						resolve();
@@ -381,9 +382,9 @@ export class ModelManager {
 							totalSize
 						});
 						// Clean up timeouts
-						clearTimeout(connectionTimeout);
+						window.clearTimeout(connectionTimeout);
 						if (inactivityTimeout) {
-							clearTimeout(inactivityTimeout);
+							window.clearTimeout(inactivityTimeout);
 						}
 						fileStream.close();
 						if (fs.existsSync(destPath)) {
@@ -404,9 +405,9 @@ export class ModelManager {
 							totalSize
 						});
 						// Clean up timeouts
-						clearTimeout(connectionTimeout);
+						window.clearTimeout(connectionTimeout);
 						if (inactivityTimeout) {
-							clearTimeout(inactivityTimeout);
+							window.clearTimeout(inactivityTimeout);
 						}
 						fileStream.close();
 						if (fs.existsSync(destPath)) {
@@ -423,16 +424,16 @@ export class ModelManager {
 						url: currentUrl
 					});
 					// Clean up timeouts
-					clearTimeout(connectionTimeout);
+					window.clearTimeout(connectionTimeout);
 					if (inactivityTimeout) {
-						clearTimeout(inactivityTimeout);
+						window.clearTimeout(inactivityTimeout);
 					}
 					reject(error);
 				});
 
 				// Set initial connection timeout (30 seconds to establish connection)
 				// This will be cleared once we start receiving data
-				let connectionTimeout = setTimeout(() => {
+				let connectionTimeout = window.setTimeout(() => {
 					console.error('Connection timeout triggered - no response from server');
 					request.destroy();
 					reject(new Error('Connection timeout - unable to reach server'));
@@ -440,15 +441,15 @@ export class ModelManager {
 
 				// Set inactivity timeout (resets every time we receive data)
 				// Increased to 120 seconds to handle slow connections better
-				let inactivityTimeout: NodeJS.Timeout | null = null;
+				let inactivityTimeout: number | null = null;
 				let lastProgressTime = Date.now();
 				const resetInactivityTimeout = () => {
 					if (inactivityTimeout) {
-						clearTimeout(inactivityTimeout);
+						window.clearTimeout(inactivityTimeout);
 					}
 					lastProgressTime = Date.now();
 					// If no data received for 120 seconds, consider it stalled
-					inactivityTimeout = setTimeout(() => {
+					inactivityTimeout = window.setTimeout(() => {
 						const stalledDuration = Math.round((Date.now() - lastProgressTime) / 1000);
 						console.error(`Download stalled - no data received for ${stalledDuration} seconds`);
 						request.destroy();

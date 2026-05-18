@@ -74,7 +74,13 @@ export class ManualDownloadInstructionsModal extends Modal {
 		step3.createEl('br');
 		const openFolderBtn = step3.createEl('button', { text: 'Open folder', cls: 'open-folder-button' });
 		openFolderBtn.onclick = () => {
-			window.require('electron').shell.openPath(this.modelsDir);
+			const requireFn = (window as unknown as { require?: (module: string) => unknown }).require;
+			if (!requireFn) {
+				new Notice('Unable to open folder automatically. Please open it manually.');
+				return;
+			}
+			const electron = requireFn('electron') as { shell: { openPath(path: string): Promise<string> } };
+			void electron.shell.openPath(this.modelsDir);
 		};
 
 		// Step 4
