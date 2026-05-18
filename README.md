@@ -667,7 +667,7 @@ Cloud modes (OpenAI / Groq) only read the audio file you pick, in order to uploa
 
 ### Shell execution (Node `child_process`)
 
-Used by **Local processing only**: it spawns `ffmpeg` (to convert audio to 16 kHz mono WAV) and the bundled `whisper.exe`. Commands are invoked as fixed argument arrays (no shell string interpolation of untrusted input beyond file paths). Cloud modes spawn no processes.
+Used by **Local processing only**: it spawns ffmpeg (a system dependency used to convert audio to 16 kHz mono WAV) and the downloaded whisper.exe. Commands are invoked as fixed argument arrays (no shell string interpolation of untrusted input beyond file paths). Cloud modes spawn no processes.
 
 ### Clipboard access
 
