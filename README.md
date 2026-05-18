@@ -5,7 +5,7 @@ Transform your audio recordings into structured, actionable notes automatically.
 ## Features
 
 - **Automatic Transcription**: Convert meeting recordings, lectures, and interviews into text
-- **Multilingual Support**: Full support for Greek and English (with automatic language detection)
+- **Multilingual Support**: Transcribe in any language Whisper supports, with automatic language detection
 - **AI-Powered Analysis**: Extract summaries, key points, action items, and follow-up questions
 - **Local or Cloud Processing**: Choose between privacy-focused local processing or faster cloud APIs
 - **Speaker Identification**: Distinguish between different speakers in conversations
@@ -87,6 +87,7 @@ Open Settings > Audio Transcription to see:
 Processing Mode
 (*) Local (Whisper.cpp) - Private, no internet needed
 ( ) Cloud (OpenAI Whisper) - Faster, requires API key
+( ) Cloud (Groq) - Fastest, very low cost, requires API key
 ( ) Cloud (OpenRouter) - Use custom models
 
 Model Size (for local processing)
@@ -468,7 +469,28 @@ If something goes wrong during transcription:
 4. Paste your API key in the "OpenAI API Key" field
 5. Save settings
 
-### Option 3: Cloud Processing with OpenRouter
+### Option 3: Cloud Processing with Groq
+
+**Advantages:**
+
+- Fastest cloud transcription (`whisper-large-v3-turbo`)
+- Very low cost (from ~$0.04 per hour of audio)
+- Generous free tier (no credit card required)
+
+**Cost:** from ~$0.04 per hour; free tier available
+
+**Setup Steps:**
+
+1. Get a free Groq API key from https://console.groq.com/keys
+2. Open plugin settings
+3. Select "Cloud (Groq)" as processing mode
+4. Paste your API key in the "Groq API key" field
+5. Choose a Groq model (turbo = fastest/cheapest, large-v3 = most accurate)
+6. Save settings
+
+> Note: Groq's free tier caps audio at ~25 MB; the paid tier allows up to ~100 MB.
+
+### Option 4: Cloud Processing with OpenRouter
 
 **Advantages:**
 
@@ -818,11 +840,11 @@ A: No. This plugin works with free Obsidian.
 
 ## Roadmap
 
-### Current Features (v1.0)
+### Current Features (v1.1)
 
 - ✓ Local Whisper.cpp transcription
-- ✓ Cloud transcription (OpenAI, OpenRouter)
-- ✓ Greek and English language support
+- ✓ Cloud transcription (OpenAI Whisper, Groq)
+- ✓ Multilingual transcription (any Whisper-supported language)
 - ✓ AI-powered analysis and extraction
 - ✓ Customizable analysis instructions
 - ✓ Automatic model management
@@ -900,6 +922,17 @@ MIT License - Free to use, modify, and distribute.
 ---
 
 ## Changelog
+
+### v1.1.1 (2026-05-18)
+
+- Security: run the `ffprobe` duration probe via `execFile` (argv, no shell) — prevents command injection through crafted audio file names
+- Docs: accurate permissions/capabilities disclosure
+
+### v1.1.0 (2026-05-18)
+
+- Added Groq as a cloud transcription mode (selectable model: turbo / large-v3 / distil)
+- Hardened multipart upload (filename sanitization) and async, non-blocking audio reads
+- Resolved Obsidian community-plugin review findings; release workflow with build-provenance attestation
 
 ### v1.0.0 (2026-01-27)
 
