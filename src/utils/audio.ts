@@ -1,8 +1,8 @@
 // Audio utility functions
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export function isAudioFile(filename: string): boolean {
 	const audioExtensions = ['m4a', 'mp3', 'wav', 'ogg', 'flac'];
@@ -26,10 +26,14 @@ export function formatDuration(seconds: number): string {
 
 export async function getAudioDuration(audioPath: string): Promise<number> {
 	try {
-		// Use ffprobe to get audio duration
-		const { stdout } = await execAsync(
-			`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${audioPath}"`
-		);
+		// Use ffprobe to get audio duration. execFile (argv, no shell) so a
+		// vault file name containing quotes/$()/backticks cannot inject a command.
+		const { stdout } = await execFileAsync('ffprobe', [
+			'-v', 'error',
+			'-show_entries', 'format=duration',
+			'-of', 'default=noprint_wrappers=1:nokey=1',
+			audioPath
+		]);
 		const duration = parseFloat(stdout.trim());
 		return isNaN(duration) ? 0 : duration;
 	} catch (error) {

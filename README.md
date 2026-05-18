@@ -652,6 +652,35 @@ Audio and transcript sent to external servers. Review your API provider's privac
 
 ---
 
+## Permissions & capabilities
+
+This plugin is desktop-only (marked as isDesktopOnly in its manifest) and Obsidian's review surfaces a few capabilities it uses. Here is exactly what each one is for and how it is scoped, so you can make an informed decision:
+
+### Filesystem access (Node `fs`)
+
+In **every** mode the plugin reads the audio file you select from disk (audio frequently lives outside the vault) so it can transcribe or upload it. **Local processing additionally**:
+
+- Downloads the Whisper model files and the `whisper.cpp` binary into the plugin's own folder (`<vault>/.obsidian/plugins/<plugin>/models` and `/bin`).
+- Writes a temporary 16 kHz WAV next to the source audio for conversion, then deletes it.
+
+Generated transcripts are always written **into your vault via the Obsidian vault API**, never through raw filesystem calls.
+
+### Shell execution (Node `child_process`)
+
+The plugin runs external binaries, but **no command is ever passed through a shell** — each is invoked with an argument array (`execFile`/`spawn`), and the audio path is always a separate argument, never interpolated into a command string:
+
+- `ffprobe` — a one-shot duration probe run **before transcription in every mode** (local *and* cloud), used only to show a time estimate.
+- `ffmpeg` — **local mode only**, converts the audio to 16 kHz mono WAV.
+- the downloaded `whisper.exe` — **local mode only**, performs the transcription.
+
+### Clipboard access
+
+Write-only, and only from the "Copy URL / Copy path / Copy filename" buttons in the manual-download-instructions dialog, which appears if an automatic model download fails so you can fetch the file by hand. The plugin never reads your clipboard.
+
+> Even in a Cloud mode the plugin still reads the audio file you select (filesystem) and runs a single `ffprobe` duration probe (`child_process`, argv — no shell). It does **not** download models, run `ffmpeg`/`whisper.exe`, or write anything outside your vault unless you use Local mode or the manual-download fallback.
+
+---
+
 ## Frequently Asked Questions (FAQ)
 
 ### General Questions
