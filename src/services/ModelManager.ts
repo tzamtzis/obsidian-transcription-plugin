@@ -314,6 +314,11 @@ export class ModelManager {
 							return;
 						}
 
+						// Cancel THIS request's connection timeout before following the
+						// redirect. Each download() call has its own connectionTimeout but
+						// shares one Promise, so a stale timer from the pre-redirect request
+						// would otherwise fire ~30s later and reject an in-flight download.
+						window.clearTimeout(connectionTimeout);
 						download(redirectUrl, redirectCount + 1);
 						return;
 					}
