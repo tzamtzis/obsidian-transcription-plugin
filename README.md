@@ -654,7 +654,7 @@ Audio and transcript sent to external servers. Review your API provider's privac
 
 ## Permissions & capabilities
 
-This plugin is `isDesktopOnly` and Obsidian's review surfaces a few capabilities it uses. Here is exactly what each one is for and how it is scoped, so you can make an informed decision:
+This plugin is desktop-only (marked as isDesktopOnly in its manifest) and Obsidian's review surfaces a few capabilities it uses. Here is exactly what each one is for and how it is scoped, so you can make an informed decision:
 
 ### Filesystem access (Node `fs`)
 
