@@ -2,6 +2,7 @@ import { requestUrl } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
 import { TranscriptionResult, TranscriptSegment } from '../services/TranscriptionService';
 import { Language } from '../settings';
+import { getErrorMessage } from '../utils/errors';
 import * as fs from 'fs';
 
 interface OpenAIWhisperSegment {
@@ -15,6 +16,10 @@ interface OpenAIWhisperResponse {
 	segments?: OpenAIWhisperSegment[];
 	language?: string;
 	duration?: number;
+}
+
+interface OpenAIErrorResponse {
+	error?: { message?: string };
 }
 
 export class CloudWhisperProcessor {
@@ -75,7 +80,7 @@ export class CloudWhisperProcessor {
 			});
 
 			if (response.status !== 200) {
-				const errorData = response.json;
+				const errorData = response.json as OpenAIErrorResponse;
 				const errorMessage = errorData?.error?.message || 'Unknown error';
 				throw new Error(`OpenAI API error: ${errorMessage}`);
 			}
@@ -85,7 +90,7 @@ export class CloudWhisperProcessor {
 			}
 
 			// Parse response
-			const result = this.parseOpenAIResponse(response.json);
+			const result = this.parseOpenAIResponse(response.json as OpenAIWhisperResponse);
 
 			if (onProgress) {
 				onProgress(100, 'Transcription complete!');
@@ -93,9 +98,9 @@ export class CloudWhisperProcessor {
 
 			return result;
 
-		} catch (error) {
+		} catch (error: unknown) {
 			console.error('OpenAI Whisper API error:', error);
-			throw new Error(`Transcription failed: ${error.message}`);
+			throw new Error(`Transcription failed: ${getErrorMessage(error)}`);
 		}
 	}
 

@@ -1,6 +1,7 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import AudioTranscriptionPlugin from './main';
 import { ManualDownloadInstructionsModal } from './ui/TranscriptionModal';
+import { getErrorMessage } from './utils/errors';
 import * as os from 'os';
 
 export type ModelSize = 'tiny' | 'base' | 'small' | 'medium' | 'large';
@@ -358,9 +359,9 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 							await this.plugin.modelManager.downloadModel(this.plugin.settings.modelSize);
 							this.display(); // Refresh to update status
 							new Notice(`Successfully downloaded ${this.plugin.settings.modelSize} model!`);
-						} catch (error) {
+						} catch (error: unknown) {
 							console.error('Failed to download model:', error);
-							const errorMessage = error.message || 'Unknown error occurred';
+							const errorMessage = getErrorMessage(error) || 'Unknown error occurred';
 
 							// Show manual download instructions modal for network-related errors
 							const isNetworkError =
@@ -410,12 +411,12 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 								button.setButtonText(`Downloading... ${progress}%`);
 							});
 							button.setButtonText('Download complete!');
-							setTimeout(() => {
+							window.setTimeout(() => {
 								this.display(); // Refresh to update status
 							}, 2000);
-						} catch (error) {
+						} catch (error: unknown) {
 							console.error('Failed to download binary:', error);
-							new Notice(`Failed to download binary: ${error.message}`);
+							new Notice(`Failed to download binary: ${getErrorMessage(error)}`);
 							button.setButtonText('Download binary');
 						} finally {
 							button.setDisabled(false);
@@ -430,7 +431,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Output folder')
-			.setDesc('Folder where transcription markdown files will be saved (leave empty for same folder as audio)')
+			.setDesc('Folder where transcription Markdown files will be saved (leave empty for same folder as audio)')
 			.addText(text => text
 				.setPlaceholder('Transcriptions')
 				.setValue(this.plugin.settings.outputFolder)
@@ -461,7 +462,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Skip if already analyzed')
-			.setDesc('Skips transcription if a markdown file with analysis already exists.')
+			.setDesc('Skips transcription if a Markdown file with analysis already exists.')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.skipIfAnalyzed)
 				.onChange(async (value) => {
@@ -481,7 +482,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Date format')
-			.setDesc('Format for dates in generated markdown files')
+			.setDesc('Format for dates in generated Markdown files')
 			.addDropdown(dropdown => dropdown
 				.addOption('iso', DATE_FORMAT_NAMES['iso'])
 				.addOption('us', DATE_FORMAT_NAMES['us'])

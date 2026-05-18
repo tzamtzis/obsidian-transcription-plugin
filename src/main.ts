@@ -3,6 +3,7 @@ import { AudioTranscriptionSettingTab, AudioTranscriptionSettings, DEFAULT_SETTI
 import { TranscriptionService } from './services/TranscriptionService';
 import { ModelManager } from './services/ModelManager';
 import { OverwriteConfirmationModal, LanguageSelectionModal } from './ui/TranscriptionModal';
+import { getErrorMessage } from './utils/errors';
 
 export default class AudioTranscriptionPlugin extends Plugin {
 	settings: AudioTranscriptionSettings;
@@ -11,8 +12,6 @@ export default class AudioTranscriptionPlugin extends Plugin {
 	ribbonIconEl: HTMLElement | null = null;
 
 	async onload() {
-		console.debug('Loading Audio Transcription Plugin');
-
 		await this.loadSettings();
 
 		// Initialize services
@@ -52,11 +51,12 @@ export default class AudioTranscriptionPlugin extends Plugin {
 	}
 
 	onunload() {
-		console.debug('Unloading Audio Transcription Plugin');
+		// Obsidian automatically detaches ribbon icons and registered events.
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const savedData = await this.loadData() as Partial<AudioTranscriptionSettings> | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, savedData);
 	}
 
 	async saveSettings() {
@@ -149,9 +149,9 @@ export default class AudioTranscriptionPlugin extends Plugin {
 		// Step 4: Start transcription with selected language and custom instructions
 		try {
 			await this.transcriptionService.transcribe(file, shouldOverwrite, selectedLanguage, customInstructionsOverride);
-		} catch (error) {
+		} catch (error: unknown) {
 			console.error('Transcription failed:', error);
-			new Notice(`Transcription failed: ${error.message}`);
+			new Notice(`Transcription failed: ${getErrorMessage(error)}`);
 		}
 	}
 

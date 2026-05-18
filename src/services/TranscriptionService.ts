@@ -6,6 +6,7 @@ import { OpenRouterProcessor } from '../processors/OpenRouterProcessor';
 import { TranscriptionProgressModal } from '../ui/TranscriptionProgressModal';
 import { getAudioDuration, estimateTranscriptionTime, formatEstimatedTime } from '../utils/audio';
 import { Language, DateFormat } from '../settings';
+import { getErrorMessage as extractErrorMessage } from '../utils/errors';
 
 export interface TranscriptionResult {
 	text: string;
@@ -85,7 +86,7 @@ export class TranscriptionService {
 			progressModal.updateProgress('transcription', 60);
 
 
-	} catch (error) {
+	} catch (error: unknown) {
 		// Check if user cancelled
 		if (progressModal.isCancelled()) {
 			progressModal.close();
@@ -108,7 +109,7 @@ export class TranscriptionService {
 		progressModal.updateProgress('analysis', 65);
 		analysis = await this.analyzeTranscription(transcriptionResult, customInstructionsOverride);
 		progressModal.updateProgress('analysis', 85);
-	} catch (error) {
+	} catch (error: unknown) {
 		console.warn('First analysis attempt failed, retrying...', error);
 		progressModal.updateProgress('analysis', 65, 'Retrying analysis...');
 
@@ -117,7 +118,7 @@ export class TranscriptionService {
 			analysis = await this.analyzeTranscription(transcriptionResult, customInstructionsOverride);
 			progressModal.updateProgress('analysis', 85);
 			new Notice('Analysis succeeded after retry');
-		} catch (retryError) {
+		} catch (retryError: unknown) {
 			console.error('Analysis failed after retry:', retryError);
 			analysisError = this.getErrorMessage(retryError);
 			new Notice(`Analysis failed: ${analysisError}. Saving transcription without analysis.`, 8000);
@@ -152,7 +153,7 @@ export class TranscriptionService {
 			}
 		}
 
-	} catch (error) {
+	} catch (error: unknown) {
 		console.error('Failed to create markdown file:', error);
 		const errorMessage = this.getErrorMessage(error);
 		progressModal.markError(errorMessage);
@@ -224,8 +225,8 @@ export class TranscriptionService {
 		}
 	}
 
-	private shouldRetryError(error: Error): boolean {
-		const message = error.message?.toLowerCase() || '';
+	private shouldRetryError(error: unknown): boolean {
+		const message = extractErrorMessage(error).toLowerCase();
 
 		// Don't retry validation errors
 		if (message.includes('not configured') ||
@@ -248,8 +249,8 @@ export class TranscriptionService {
 		return true;
 	}
 
-	private getErrorMessage(error: Error): string {
-		const originalMessage = error.message || 'Unknown error occurred';
+	private getErrorMessage(error: unknown): string {
+		const originalMessage = extractErrorMessage(error) || 'Unknown error occurred';
 
 		// Return validation errors as-is (they already have good messages)
 		if (originalMessage.includes('Solution:')) {

@@ -1,6 +1,15 @@
 import { requestUrl } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
 import { AnalysisResult } from '../services/TranscriptionService';
+import { getErrorMessage } from '../utils/errors';
+
+interface OpenRouterErrorResponse {
+	error?: { message?: string };
+}
+
+interface OpenRouterChatResponse {
+	choices?: Array<{ message?: { content?: string } }>;
+}
 
 export class OpenRouterProcessor {
 	private plugin: AudioTranscriptionPlugin;
@@ -66,19 +75,19 @@ export class OpenRouterProcessor {
 			});
 
 			if (response.status !== 200) {
-				const errorData = response.json;
+				const errorData = response.json as OpenRouterErrorResponse;
 				const errorMessage = errorData?.error?.message || 'Unknown error';
 				throw new Error(`OpenRouter API error: ${errorMessage}`);
 			}
 
-			const result = response.json;
+			const result = response.json as OpenRouterChatResponse;
 			const content = result.choices?.[0]?.message?.content || '';
 
 			return this.parseAnalysisResult(content);
 
-		} catch (error) {
+		} catch (error: unknown) {
 			console.error('OpenRouter API error:', error);
-			throw new Error(`Analysis failed: ${error.message}`);
+			throw new Error(`Analysis failed: ${getErrorMessage(error)}`);
 		}
 	}
 
