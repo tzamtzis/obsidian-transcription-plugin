@@ -172,13 +172,18 @@ export class GroqWhisperProcessor {
 	}
 
 	/**
-	 * Strip characters that would break out of the multipart
-	 * `Content-Disposition` header (CR, LF, double quote). Conservative: any
-	 * such character becomes `_`. Falls back to a safe default if the result
-	 * is empty.
+	 * Strip characters that would break out of the quoted `filename="..."`
+	 * value in the multipart `Content-Disposition` header: `\` (a trailing
+	 * backslash escapes the closing quote we append), `"` (closes the string
+	 * early), C0 control chars 0x00-0x1F (incl. CR/LF/TAB) and DEL (0x7F).
+	 * Each becomes `_`; falls back to a safe default if nothing remains.
+	 *
+	 * NOTE: kept in sync with src/utils/multipart.ts; this private copy is
+	 * removed in favour of the shared util once PR #11 also merges (see #12).
 	 */
 	private sanitizeMultipartFilename(fileName: string): string {
-		const sanitized = fileName.replace(/[\r\n"]/g, '_').trim();
+		// eslint-disable-next-line no-control-regex -- intentional: strip control chars
+		const sanitized = fileName.replace(/[\\"\x00-\x1F\x7F]/g, '_').trim();
 		return sanitized.length > 0 ? sanitized : 'audio.m4a';
 	}
 
