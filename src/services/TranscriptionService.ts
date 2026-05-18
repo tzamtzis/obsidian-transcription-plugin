@@ -224,6 +224,19 @@ export class TranscriptionService {
 				throw new Error('Groq model not configured.\n\n' +
 					'Solution: Go to Settings → Audio Transcription → API Keys → Select a Groq model');
 			}
+
+			// Groq rejects audio over 25 MB on the free tier (paid tier allows up
+			// to 100 MB). Warn but don't block, since we can't detect the tier.
+			const GROQ_FREE_TIER_MAX = 25 * 1024 * 1024;
+			if (fileSize > GROQ_FREE_TIER_MAX) {
+				const sizeMB = Math.round(fileSize / (1024 * 1024));
+				new Notice(
+					`This file is ${sizeMB} MB. Groq's free tier limit is 25 MB, so ` +
+					`transcription may fail unless you are on a paid Groq tier (up to 100 MB). ` +
+					`For large files, use Local or OpenAI mode instead.`,
+					10000
+				);
+			}
 		}
 
 		// Validate OpenRouter API key for analysis
