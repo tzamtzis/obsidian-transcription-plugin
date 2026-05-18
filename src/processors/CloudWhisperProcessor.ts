@@ -3,6 +3,7 @@ import AudioTranscriptionPlugin from '../main';
 import { TranscriptionResult, TranscriptSegment } from '../services/TranscriptionService';
 import { Language } from '../settings';
 import { getErrorMessage } from '../utils/errors';
+import { sanitizeMultipartFilename } from '../utils/multipart';
 import * as fs from 'fs';
 
 interface OpenAIWhisperSegment {
@@ -45,8 +46,9 @@ export class CloudWhisperProcessor {
 			onProgress(10, 'Preparing audio file...');
 		}
 
-		// Read audio file
-		const audioBuffer = fs.readFileSync(audioPath);
+		// Read audio file (async so the Obsidian UI thread is not blocked while
+		// reading a potentially large file, e.g. from a cloud-backed vault).
+		const audioBuffer = await fs.promises.readFile(audioPath);
 		const fileName = audioPath.split(/[\\/]/).pop() || 'audio.m4a';
 
 		if (onProgress) {
@@ -112,10 +114,15 @@ export class CloudWhisperProcessor {
 	): ArrayBuffer {
 		const parts: Buffer[] = [];
 
+		// Sanitize the (user-controlled, vault-derived) file name before placing
+		// it in a header: CR/LF or a double quote would let it break out of the
+		// Content-Disposition line and inject additional multipart parts.
+		const safeFileName = sanitizeMultipartFilename(fileName);
+
 		// Add file field
 		parts.push(Buffer.from(
 			`--${boundary}\r\n` +
-			`Content-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
+			`Content-Disposition: form-data; name="file"; filename="${safeFileName}"\r\n` +
 			`Content-Type: audio/mpeg\r\n\r\n`
 		));
 		parts.push(audioBuffer);
