@@ -5,7 +5,14 @@ import { getErrorMessage } from './utils/errors';
 import * as os from 'os';
 
 export type ModelSize = 'tiny' | 'base' | 'small' | 'medium' | 'large';
-export type ProcessingMode = 'local' | 'cloud-whisper' | 'cloud-openrouter';
+export type ProcessingMode = 'local' | 'cloud-whisper' | 'cloud-groq' | 'cloud-openrouter';
+export type GroqModel = 'whisper-large-v3-turbo' | 'whisper-large-v3' | 'distil-whisper-large-v3-en';
+
+export const GROQ_MODEL_NAMES: Record<GroqModel, string> = {
+	'whisper-large-v3-turbo': 'Whisper Large v3 Turbo (fastest, cheapest)',
+	'whisper-large-v3': 'Whisper Large v3 (most accurate, multilingual)',
+	'distil-whisper-large-v3-en': 'Distil-Whisper Large v3 (English only, fastest)'
+};
 export type DateFormat =
 	| 'iso' // YYYY-MM-DD
 	| 'us' // MM/DD/YYYY
@@ -92,6 +99,8 @@ export interface AudioTranscriptionSettings {
 
 	// API Keys
 	openaiApiKey: string;
+	groqApiKey: string;
+	groqModel: GroqModel;
 	openrouterApiKey: string;
 	openrouterModelName: string;
 
@@ -120,6 +129,8 @@ export const DEFAULT_SETTINGS: AudioTranscriptionSettings = {
 	speakerCount: 2,
 	customInstructions: '',
 	openaiApiKey: '',
+	groqApiKey: '',
+	groqModel: 'whisper-large-v3-turbo',
 	openrouterApiKey: '',
 	openrouterModelName: 'meta-llama/llama-3.2-3b-instruct',
 	outputFolder: '',
@@ -156,6 +167,7 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 			.addDropdown(dropdown => dropdown
 				.addOption('local', 'Local (whisper.cpp) – private, no internet needed')
 				.addOption('cloud-whisper', 'Cloud (OpenAI Whisper) - faster, requires api key')
+				.addOption('cloud-groq', 'Cloud (Groq) - fastest, very low cost, requires api key')
 				.addOption('cloud-openrouter', 'Cloud (OpenRouter) - use custom models')
 				.setValue(this.plugin.settings.processingMode)
 				.onChange(async (value: ProcessingMode) => {
@@ -306,6 +318,36 @@ export class AudioTranscriptionSettingTab extends PluginSettingTab {
 							await this.plugin.saveSettings();
 						});
 					text.inputEl.setAttribute('type', 'password');
+				});
+		}
+
+		if (this.plugin.settings.processingMode === 'cloud-groq') {
+			new Setting(containerEl)
+				.setName('Groq API key')
+				.setDesc('Required for Groq transcription. Free key (no card) at console.groq.com/keys')
+				.addText(text => {
+					text.setPlaceholder('gsk_xxx')
+						.setValue(this.plugin.settings.groqApiKey)
+						.onChange(async (value) => {
+							this.plugin.settings.groqApiKey = value;
+							await this.plugin.saveSettings();
+						});
+					text.inputEl.setAttribute('type', 'password');
+				});
+
+			new Setting(containerEl)
+				.setName('Groq model')
+				.setDesc('Transcription model used on Groq (turbo is fastest and cheapest)')
+				.addDropdown(dropdown => {
+					for (const model of Object.keys(GROQ_MODEL_NAMES) as GroqModel[]) {
+						dropdown.addOption(model, GROQ_MODEL_NAMES[model]);
+					}
+					dropdown
+						.setValue(this.plugin.settings.groqModel)
+						.onChange(async (value: GroqModel) => {
+							this.plugin.settings.groqModel = value;
+							await this.plugin.saveSettings();
+						});
 				});
 		}
 

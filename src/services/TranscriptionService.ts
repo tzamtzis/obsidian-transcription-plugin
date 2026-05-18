@@ -2,6 +2,7 @@ import { TFile, Notice, FileSystemAdapter } from 'obsidian';
 import AudioTranscriptionPlugin from '../main';
 import { LocalWhisperProcessor } from '../processors/LocalWhisperProcessor';
 import { CloudWhisperProcessor } from '../processors/CloudWhisperProcessor';
+import { GroqWhisperProcessor } from '../processors/GroqWhisperProcessor';
 import { OpenRouterProcessor } from '../processors/OpenRouterProcessor';
 import { TranscriptionProgressModal } from '../ui/TranscriptionProgressModal';
 import { getAudioDuration, estimateTranscriptionTime, formatEstimatedTime } from '../utils/audio';
@@ -40,12 +41,14 @@ export class TranscriptionService {
 	private currentProgress: number = 0;
 	public localProcessor: LocalWhisperProcessor;
 	private cloudWhisperProcessor: CloudWhisperProcessor;
+	private groqWhisperProcessor: GroqWhisperProcessor;
 	private openRouterProcessor: OpenRouterProcessor;
 
 	constructor(plugin: AudioTranscriptionPlugin) {
 		this.plugin = plugin;
 		this.localProcessor = new LocalWhisperProcessor(plugin);
 		this.cloudWhisperProcessor = new CloudWhisperProcessor(plugin);
+		this.groqWhisperProcessor = new GroqWhisperProcessor(plugin);
 		this.openRouterProcessor = new OpenRouterProcessor(plugin);
 	}
 
@@ -202,6 +205,25 @@ export class TranscriptionService {
 					'OpenAI API keys should start with "sk-".\n' +
 					'Solution: Check your API key in Settings → Audio Transcription → API Keys');
 			}
+
+		} else if (processingMode === 'cloud-groq') {
+			// Validate Groq API key
+			const apiKey = this.plugin.settings.groqApiKey;
+			if (!apiKey || apiKey.trim().length === 0) {
+				throw new Error('Groq API key not configured.\n\n' +
+					'Solution: Go to Settings → Audio Transcription → API Keys → Add your Groq API key');
+			}
+
+			if (!apiKey.startsWith('gsk_')) {
+				throw new Error('Invalid Groq API key format.\n\n' +
+					'Groq API keys should start with "gsk_".\n' +
+					'Solution: Check your API key in Settings → Audio Transcription → API Keys');
+			}
+
+			if (!this.plugin.settings.groqModel) {
+				throw new Error('Groq model not configured.\n\n' +
+					'Solution: Go to Settings → Audio Transcription → API Keys → Select a Groq model');
+			}
 		}
 
 		// Validate OpenRouter API key for analysis
@@ -290,6 +312,9 @@ export class TranscriptionService {
 		} else if (processingMode === 'cloud-whisper') {
 			// Use OpenAI Whisper API
 			return await this.transcribeCloudWhisper(audioFile, language);
+		} else if (processingMode === 'cloud-groq') {
+			// Use Groq Whisper API
+			return await this.transcribeCloudGroq(audioFile, language);
 		} else {
 			// Use OpenRouter
 			return this.transcribeCloudOpenRouter(audioFile, language);
@@ -313,6 +338,16 @@ export class TranscriptionService {
 
 		// Use CloudWhisperProcessor
 		return await this.cloudWhisperProcessor.transcribe(audioPath, (progress, message) => {
+			this.currentProgress = progress;
+		}, language);
+	}
+
+	private async transcribeCloudGroq(audioFile: TFile, language?: Language): Promise<TranscriptionResult> {
+		// Get the audio file path
+		const audioPath = this.getFullPath(audioFile.path);
+
+		// Use GroqWhisperProcessor
+		return await this.groqWhisperProcessor.transcribe(audioPath, (progress, message) => {
 			this.currentProgress = progress;
 		}, language);
 	}
@@ -605,6 +640,7 @@ ${transcriptText}
 	cancel(): void {
 		this.localProcessor.cancel();
 		this.cloudWhisperProcessor.cancel();
+		this.groqWhisperProcessor.cancel();
 		this.openRouterProcessor.cancel();
 	}
 
