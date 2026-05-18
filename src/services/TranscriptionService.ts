@@ -86,80 +86,80 @@ export class TranscriptionService {
 			progressModal.updateProgress('transcription', 60);
 
 
-	} catch (error: unknown) {
-		// Check if user cancelled
-		if (progressModal.isCancelled()) {
-			progressModal.close();
-			new Notice('Transcription cancelled');
-			return;
+		} catch (error: unknown) {
+			// Check if user cancelled
+			if (progressModal.isCancelled()) {
+				progressModal.close();
+				new Notice('Transcription cancelled');
+				return;
+			}
+
+			// Transcription failed - this is a fatal error
+			console.error('Transcription failed:', error);
+			const errorMessage = this.getErrorMessage(error);
+			progressModal.markError(errorMessage);
+			throw error;
 		}
 
-		// Transcription failed - this is a fatal error
-		console.error('Transcription failed:', error);
-		const errorMessage = this.getErrorMessage(error);
-		progressModal.markError(errorMessage);
-		throw error;
-	}
+		// Step 2: Analyze content (with retry logic)
+		let analysis: AnalysisResult | null = null;
+		let analysisError: string | null = null;
 
-	// Step 2: Analyze content (with retry logic)
-	let analysis: AnalysisResult | null = null;
-	let analysisError: string | null = null;
-
-	try {
-		progressModal.updateProgress('analysis', 65);
-		analysis = await this.analyzeTranscription(transcriptionResult, customInstructionsOverride);
-		progressModal.updateProgress('analysis', 85);
-	} catch (error: unknown) {
-		console.warn('First analysis attempt failed, retrying...', error);
-		progressModal.updateProgress('analysis', 65, 'Retrying analysis...');
-
-		// Retry analysis once
 		try {
+			progressModal.updateProgress('analysis', 65);
 			analysis = await this.analyzeTranscription(transcriptionResult, customInstructionsOverride);
 			progressModal.updateProgress('analysis', 85);
-			new Notice('Analysis succeeded after retry');
-		} catch (retryError: unknown) {
-			console.error('Analysis failed after retry:', retryError);
-			analysisError = this.getErrorMessage(retryError);
-			new Notice(`Analysis failed: ${analysisError}. Saving transcription without analysis.`, 8000);
-		}
-	}
+		} catch (error: unknown) {
+			console.warn('First analysis attempt failed, retrying...', error);
+			progressModal.updateProgress('analysis', 65, 'Retrying analysis...');
 
-	// Step 3: Create markdown file (even if analysis failed)
-	try {
-		progressModal.updateProgress('saving', 90);
-		await this.createMarkdownFile(audioFile, transcriptionResult, analysis, shouldOverwrite, analysisError);
-
-		// Complete
-		progressModal.markComplete();
-		if (analysisError) {
-			new Notice('Transcription complete, but analysis failed. Check the file for details.');
-		} else {
-			new Notice('Transcription complete!');
-		}
-
-		// Open the created file
-		const mdFileName = this.getMarkdownFileName(audioFile);
-		await this.plugin.app.workspace.openLinkText(mdFileName, '', true);
-
-		// Delete the audio file if configured to do so
-		if (this.plugin.settings.deleteAudioAfterTranscription) {
+			// Retry analysis once
 			try {
-				await this.plugin.app.fileManager.trashFile(audioFile);
-				new Notice('Audio file deleted after successful transcription');
-			} catch (deleteError) {
-				console.error('Failed to delete audio file:', deleteError);
-				new Notice('Transcription complete but audio file could not be deleted', 8000);
+				analysis = await this.analyzeTranscription(transcriptionResult, customInstructionsOverride);
+				progressModal.updateProgress('analysis', 85);
+				new Notice('Analysis succeeded after retry');
+			} catch (retryError: unknown) {
+				console.error('Analysis failed after retry:', retryError);
+				analysisError = this.getErrorMessage(retryError);
+				new Notice(`Analysis failed: ${analysisError}. Saving transcription without analysis.`, 8000);
 			}
 		}
 
-	} catch (error: unknown) {
-		console.error('Failed to create markdown file:', error);
-		const errorMessage = this.getErrorMessage(error);
-		progressModal.markError(errorMessage);
-		throw error;
+		// Step 3: Create markdown file (even if analysis failed)
+		try {
+			progressModal.updateProgress('saving', 90);
+			await this.createMarkdownFile(audioFile, transcriptionResult, analysis, shouldOverwrite, analysisError);
+
+			// Complete
+			progressModal.markComplete();
+			if (analysisError) {
+				new Notice('Transcription complete, but analysis failed. Check the file for details.');
+			} else {
+				new Notice('Transcription complete!');
+			}
+
+			// Open the created file
+			const mdFileName = this.getMarkdownFileName(audioFile);
+			await this.plugin.app.workspace.openLinkText(mdFileName, '', true);
+
+			// Delete the audio file if configured to do so
+			if (this.plugin.settings.deleteAudioAfterTranscription) {
+				try {
+					await this.plugin.app.fileManager.trashFile(audioFile);
+					new Notice('Audio file deleted after successful transcription');
+				} catch (deleteError) {
+					console.error('Failed to delete audio file:', deleteError);
+					new Notice('Transcription complete but audio file could not be deleted', 8000);
+				}
+			}
+
+		} catch (error: unknown) {
+			console.error('Failed to create markdown file:', error);
+			const errorMessage = this.getErrorMessage(error);
+			progressModal.markError(errorMessage);
+			throw error;
+		}
 	}
-}
 
 	private validateSetup(audioFile: TFile): void {
 		const { processingMode } = this.plugin.settings;
@@ -223,30 +223,6 @@ export class TranscriptionService {
 			throw new Error('OpenRouter model name not configured.\n\n' +
 				'Solution: Go to Settings → Audio Transcription → API Keys → Add a model name (e.g., meta-llama/llama-3.2-3b-instruct)');
 		}
-	}
-
-	private shouldRetryError(error: unknown): boolean {
-		const message = extractErrorMessage(error).toLowerCase();
-
-		// Don't retry validation errors
-		if (message.includes('not configured') ||
-			message.includes('not found') ||
-			message.includes('invalid') ||
-			message.includes('solution:')) {
-			return false;
-		}
-
-		// Retry network errors and temporary failures
-		if (message.includes('timeout') ||
-			message.includes('network') ||
-			message.includes('econnrefused') ||
-			message.includes('enotfound') ||
-			message.includes('fetch failed')) {
-			return true;
-		}
-
-		// Default: retry once
-		return true;
 	}
 
 	private getErrorMessage(error: unknown): string {
