@@ -50,8 +50,9 @@ export class GroqWhisperProcessor {
 			onProgress(10, 'Preparing audio file...');
 		}
 
-		// Read audio file
-		const audioBuffer = fs.readFileSync(audioPath);
+		// Read audio file (async so the Obsidian UI thread is not blocked while
+		// reading a potentially large file, e.g. from a cloud-backed vault).
+		const audioBuffer = await fs.promises.readFile(audioPath);
 		const fileName = audioPath.split(/[\\/]/).pop() || 'audio.m4a';
 
 		if (onProgress) {
@@ -117,10 +118,15 @@ export class GroqWhisperProcessor {
 	): ArrayBuffer {
 		const parts: Buffer[] = [];
 
+		// Sanitize the (user-controlled, vault-derived) file name before placing
+		// it in a header: CR/LF or a double quote would let it break out of the
+		// Content-Disposition line and inject extra multipart parts.
+		const safeFileName = this.sanitizeMultipartFilename(fileName);
+
 		// Add file field
 		parts.push(Buffer.from(
 			`--${boundary}\r\n` +
-			`Content-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
+			`Content-Disposition: form-data; name="file"; filename="${safeFileName}"\r\n` +
 			`Content-Type: audio/mpeg\r\n\r\n`
 		));
 		parts.push(audioBuffer);
@@ -163,6 +169,17 @@ export class GroqWhisperProcessor {
 		// Combine all parts
 		const buffer = Buffer.concat(parts);
 		return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+	}
+
+	/**
+	 * Strip characters that would break out of the multipart
+	 * `Content-Disposition` header (CR, LF, double quote). Conservative: any
+	 * such character becomes `_`. Falls back to a safe default if the result
+	 * is empty.
+	 */
+	private sanitizeMultipartFilename(fileName: string): string {
+		const sanitized = fileName.replace(/[\r\n"]/g, '_').trim();
+		return sanitized.length > 0 ? sanitized : 'audio.m4a';
 	}
 
 	private getLanguageCode(language?: Language): string | undefined {
