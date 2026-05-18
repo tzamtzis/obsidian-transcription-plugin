@@ -3,6 +3,7 @@ import AudioTranscriptionPlugin from '../main';
 import { TranscriptionResult, TranscriptSegment } from '../services/TranscriptionService';
 import { Language } from '../settings';
 import { getErrorMessage } from '../utils/errors';
+import { sanitizeMultipartFilename } from '../utils/multipart';
 import * as fs from 'fs';
 
 interface GroqWhisperSegment {
@@ -121,7 +122,7 @@ export class GroqWhisperProcessor {
 		// Sanitize the (user-controlled, vault-derived) file name before placing
 		// it in a header: CR/LF or a double quote would let it break out of the
 		// Content-Disposition line and inject extra multipart parts.
-		const safeFileName = this.sanitizeMultipartFilename(fileName);
+		const safeFileName = sanitizeMultipartFilename(fileName);
 
 		// Add file field
 		parts.push(Buffer.from(
@@ -169,22 +170,6 @@ export class GroqWhisperProcessor {
 		// Combine all parts
 		const buffer = Buffer.concat(parts);
 		return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-	}
-
-	/**
-	 * Strip characters that would break out of the quoted `filename="..."`
-	 * value in the multipart `Content-Disposition` header: `\` (a trailing
-	 * backslash escapes the closing quote we append), `"` (closes the string
-	 * early), C0 control chars 0x00-0x1F (incl. CR/LF/TAB) and DEL (0x7F).
-	 * Each becomes `_`; falls back to a safe default if nothing remains.
-	 *
-	 * NOTE: kept in sync with src/utils/multipart.ts; this private copy is
-	 * removed in favour of the shared util once PR #11 also merges (see #12).
-	 */
-	private sanitizeMultipartFilename(fileName: string): string {
-		// eslint-disable-next-line no-control-regex -- intentional: strip control chars
-		const sanitized = fileName.replace(/[\\"\x00-\x1F\x7F]/g, '_').trim();
-		return sanitized.length > 0 ? sanitized : 'audio.m4a';
 	}
 
 	private getLanguageCode(language?: Language): string | undefined {
