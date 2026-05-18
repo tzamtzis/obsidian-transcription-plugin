@@ -1,11 +1,11 @@
 {
-  "id": "audio-transcription",
-  "name": "Audio Transcription",
-  "version": "1.0.0",
-  "minAppVersion": "1.6.6",
-  "description": "Transcribe audio files (m4a, mp3) and extract actionable insights using AI. Supports all languages with local or cloud processing.",
-  "author": "Panagiotis Tzamtzis",
-  "authorUrl": "https://tzamtzis.gr/",
-  "fundingUrl": "https://buymeacoffee.com/tzam",
-  "isDesktopOnly": true
+	"id": "audio-transcription",
+	"name": "Audio Transcription",
+	"version": "1.1.0",
+	"minAppVersion": "1.6.6",
+	"description": "Transcribe audio files (m4a, mp3) and extract actionable insights using AI. Supports all languages with local or cloud processing.",
+	"author": "Panagiotis Tzamtzis",
+	"authorUrl": "https://tzamtzis.gr/",
+	"fundingUrl": "https://buymeacoffee.com/tzam",
+	"isDesktopOnly": true
 }
