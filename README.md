@@ -428,6 +428,8 @@ If something goes wrong during transcription:
 
 ## Setup Guide
 
+> **Required for every mode:** after transcription the plugin runs an AI analysis pass, and setup validation currently **requires an OpenRouter API key and analysis model for _all_ processing modes** — Local, OpenAI Whisper, and Groq alike. Configure it under [Configuring Analysis (AI Insights)](#configuring-analysis-ai-insights) before your first transcription, otherwise it stops with an "OpenRouter API key not configured" error.
+
 ### Option 1: Local Processing (Recommended for Privacy)
 
 **Advantages:**
@@ -467,7 +469,8 @@ If something goes wrong during transcription:
 2. Open plugin settings
 3. Select "Cloud (OpenAI Whisper)" as processing mode
 4. Paste your API key in the "OpenAI API Key" field
-5. Save settings
+5. Also configure OpenRouter for analysis (required) — see [Configuring Analysis (AI Insights)](#configuring-analysis-ai-insights)
+6. Save settings
 
 ### Option 3: Cloud Processing with Groq
 
@@ -486,7 +489,8 @@ If something goes wrong during transcription:
 3. Select "Cloud (Groq)" as processing mode
 4. Paste your API key in the "Groq API key" field
 5. Choose a Groq model (turbo = fastest/cheapest, large-v3 = most accurate)
-6. Save settings
+6. Also configure OpenRouter for analysis (required) — see [Configuring Analysis (AI Insights)](#configuring-analysis-ai-insights)
+7. Save settings
 
 > Note: Groq's free tier caps audio at ~25 MB; the paid tier allows up to ~100 MB.
 
