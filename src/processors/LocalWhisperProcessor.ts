@@ -44,7 +44,11 @@ export class LocalWhisperProcessor {
 		}
 		const pluginDir = adapter.getBasePath();
 		const configDir = this.plugin.app.vault.configDir;
-		const binDir = path.join(pluginDir, configDir, 'plugins', 'obsidian-transcription-plugin', 'bin');
+		// Use the folder the plugin was actually loaded from, not a hardcoded
+		// name. manifest.dir is the vault-relative plugin path (e.g.
+		// ".obsidian/plugins/<folder>"); fall back to id-based path if absent.
+		const relativePluginDir = this.plugin.manifest.dir ?? `${configDir}/plugins/${this.plugin.manifest.id}`;
+		const binDir = path.join(pluginDir, relativePluginDir, 'bin');
 
 		// Use Windows binary for now
 		this.whisperBinaryPath = path.join(binDir, 'whisper.exe');

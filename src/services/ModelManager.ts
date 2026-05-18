@@ -42,7 +42,11 @@ export class ModelManager {
 		}
 		const pluginDir = adapter.getBasePath();
 		const configDir = this.plugin.app.vault.configDir;
-		this.modelsDir = path.join(pluginDir, configDir, 'plugins', 'obsidian-transcription-plugin', 'models');
+		// Use the folder the plugin was actually loaded from, not a hardcoded
+		// name. manifest.dir is the vault-relative plugin path (e.g.
+		// ".obsidian/plugins/<folder>"); fall back to id-based path if absent.
+		const relativePluginDir = this.plugin.manifest.dir ?? `${configDir}/plugins/${this.plugin.manifest.id}`;
+		this.modelsDir = path.join(pluginDir, relativePluginDir, 'models');
 		this.ensureModelsDirectory();
 	}
 
