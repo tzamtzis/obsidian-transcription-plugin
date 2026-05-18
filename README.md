@@ -658,22 +658,26 @@ This plugin is desktop-only (marked as isDesktopOnly in its manifest) and Obsidi
 
 ### Filesystem access (Node `fs`)
 
-Used by **Local processing only**:
+In **every** mode the plugin reads the audio file you select from disk (audio frequently lives outside the vault) so it can transcribe or upload it. **Local processing additionally**:
 
-- Downloading the Whisper model files and the `whisper.cpp` binary into the plugin's own folder (`<vault>/.obsidian/plugins/<plugin>/models` and `/bin`).
-- Reading the audio file you select (audio frequently lives outside the vault) and writing a temporary 16 kHz WAV next to it for conversion, then deleting that temp file.
+- Downloads the Whisper model files and the `whisper.cpp` binary into the plugin's own folder (`<vault>/.obsidian/plugins/<plugin>/models` and `/bin`).
+- Writes a temporary 16 kHz WAV next to the source audio for conversion, then deletes it.
 
-Cloud modes (OpenAI / Groq) only read the audio file you pick, in order to upload it. Generated transcripts are always written **into your vault via the Obsidian vault API**, never through raw filesystem calls.
+Generated transcripts are always written **into your vault via the Obsidian vault API**, never through raw filesystem calls.
 
 ### Shell execution (Node `child_process`)
 
-Used by **Local processing only**: it spawns ffmpeg (a system dependency used to convert audio to 16 kHz mono WAV) and the downloaded whisper.exe. Commands are invoked as fixed argument arrays (no shell string interpolation of untrusted input beyond file paths). Cloud modes spawn no processes.
+The plugin runs external binaries, but **no command is ever passed through a shell** — each is invoked with an argument array (`execFile`/`spawn`), and the audio path is always a separate argument, never interpolated into a command string:
+
+- `ffprobe` — a one-shot duration probe run **before transcription in every mode** (local *and* cloud), used only to show a time estimate.
+- `ffmpeg` — **local mode only**, converts the audio to 16 kHz mono WAV.
+- the downloaded `whisper.exe` — **local mode only**, performs the transcription.
 
 ### Clipboard access
 
 Write-only, and only from the "Copy URL / Copy path / Copy filename" buttons in the manual-download-instructions dialog, which appears if an automatic model download fails so you can fetch the file by hand. The plugin never reads your clipboard.
 
-> If you only use a Cloud mode and never hit the manual-download fallback, none of the filesystem/shell paths above are exercised — the plugin only touches the audio file you select and your chosen API.
+> Even in a Cloud mode the plugin still reads the audio file you select (filesystem) and runs a single `ffprobe` duration probe (`child_process`, argv — no shell). It does **not** download models, run `ffmpeg`/`whisper.exe`, or write anything outside your vault unless you use Local mode or the manual-download fallback.
 
 ---
 
