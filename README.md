@@ -652,6 +652,31 @@ Audio and transcript sent to external servers. Review your API provider's privac
 
 ---
 
+## Permissions & capabilities
+
+This plugin is `isDesktopOnly` and Obsidian's review surfaces a few capabilities it uses. Here is exactly what each one is for and how it is scoped, so you can make an informed decision:
+
+### Filesystem access (Node `fs`)
+
+Used by **Local processing only**:
+
+- Downloading the Whisper model files and the `whisper.cpp` binary into the plugin's own folder (`<vault>/.obsidian/plugins/<plugin>/models` and `/bin`).
+- Reading the audio file you select (audio frequently lives outside the vault) and writing a temporary 16 kHz WAV next to it for conversion, then deleting that temp file.
+
+Cloud modes (OpenAI / Groq) only read the audio file you pick, in order to upload it. Generated transcripts are always written **into your vault via the Obsidian vault API**, never through raw filesystem calls.
+
+### Shell execution (Node `child_process`)
+
+Used by **Local processing only**: it spawns `ffmpeg` (to convert audio to 16 kHz mono WAV) and the bundled `whisper.exe`. Commands are invoked as fixed argument arrays (no shell string interpolation of untrusted input beyond file paths). Cloud modes spawn no processes.
+
+### Clipboard access
+
+Write-only, and only from the "Copy URL / Copy path / Copy filename" buttons in the manual-download-instructions dialog, which appears if an automatic model download fails so you can fetch the file by hand. The plugin never reads your clipboard.
+
+> If you only use a Cloud mode and never hit the manual-download fallback, none of the filesystem/shell paths above are exercised — the plugin only touches the audio file you select and your chosen API.
+
+---
+
 ## Frequently Asked Questions (FAQ)
 
 ### General Questions
