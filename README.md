@@ -494,22 +494,9 @@ If something goes wrong during transcription:
 
 > Note: Groq's free tier caps audio at ~25 MB; the paid tier allows up to ~100 MB.
 
-### Option 4: Cloud Processing with OpenRouter
+### OpenRouter is for analysis, not transcription
 
-**Advantages:**
-
-- Access to multiple AI models
-- Often cheaper than OpenAI
-- Flexible model selection
-
-**Setup Steps:**
-
-1. Get an OpenRouter API key from https://openrouter.ai/keys
-2. Open plugin settings
-3. Select "Cloud (OpenRouter)" as processing mode
-4. Paste your API key in the "OpenRouter API Key" field
-5. Enter your preferred model name (e.g., `openai/whisper-large-v3`)
-6. Save settings
+OpenRouter does **not** transcribe audio — it powers the **AI analysis** step only. A "Cloud (OpenRouter)" entry currently appears in the processing-mode dropdown, but **selecting it for transcription fails** with _"OpenRouter transcription not supported"_. For transcription, use **Local**, **OpenAI Whisper**, or **Groq** (Options 1–3 above). To set up your OpenRouter API key and analysis model, see [Configuring Analysis (AI Insights)](#configuring-analysis-ai-insights) below.
 
 ### Configuring Analysis (AI Insights)
 
